@@ -90,7 +90,7 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
         f.write('0.5 0.99 5.9295 adjust\n')
         f.write(wave[0]+' '+wave[1]+'\n')
         
-    o = sp.check_output([GSSP_cmd, output_path])
+    o = sp.check_output(GSSP_cmd + ' ' + output_path, shell=True)
     log_fn = output_path+'.log'
     with open(log_fn, 'wb') as f:
         f.write(o)
@@ -101,15 +101,15 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
 if __name__ == '__main__':
     out_fn = 'grid_gen_test.inp'
     p = {}
-    p['T_eff'] = [5000, 6000, 100]
-    p['log(g)'] = [3.0, 3.0, 0.1]
-    p['v*sin(i)'] = [25, 25, 10]
-    p['v_micro'] = [2, 2, 1]
-    p['[M/H]'] = [0, 0, 0.1]
+    p['T_eff'] = [6000, 6000, 100]
+    p['log(g)'] = [4.0, 4.0, 0.1]
+    p['v*sin(i)'] = [50, 50, 10]
+    p['v_micro'] = [0, 2, 1]
+    p['[M/H]'] = [-0.1, 0.1, 0.1]
     
-    wave_range = [4500, 5000, 0.1]
+    wave_range = [4500, 5000, 1]
 
-    run_GSSP_grid(out_fn, p, wave_range, './GSSP')
+    run_GSSP_grid(out_fn, p, wave_range, '/home/ilyas/SDSS/GSSP/bin/GSSP')
     
 
 
