@@ -67,7 +67,7 @@ class RandomGrid:
         for i in range(len(self.CUBES)):
             v = interpn(self.axes, self.CUBES[i], p)
             spectrum.append(v)
-        return np.array(spectrum)
+        return p, np.array(spectrum)
         
 
 

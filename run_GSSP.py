@@ -89,7 +89,8 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
         f.write('input_data.norm\n')
         f.write('0.5 0.99 5.9295 adjust\n')
         f.write(wave[0]+' '+wave[1]+'\n')
-        
+    shutil.rmtree('rgs_files', ignore_errors=True)
+    
     o = sp.check_output(GSSP_cmd + ' ' + output_path, shell=True)
     log_fn = output_path+'.log'
     with open(log_fn, 'wb') as f:

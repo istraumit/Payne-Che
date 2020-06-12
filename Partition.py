@@ -38,9 +38,11 @@ class Partition:
         param_len = []
         print('Grid dimensions:')
         pp = self.params
+        self.total_volume = 1
         for p in pp:
-            length = int( (pp[p][1] - pp[p][0])/pp[p][2] )
-            param_len.append( (length, p) )
+            length = (pp[p][1] - pp[p][0])/pp[p][2]
+            self.total_volume *= length
+            param_len.append( (int(length), p) )
             print(' '*4, p, ':', length)
 
         param_len.sort()
@@ -57,18 +59,21 @@ class Partition:
             n = int(self.dims_info[p].length)
             V *= n
             print(' '*4, p, ':', n)
-        print('Target volume:', self.model_limit)
-        print('Actual volume:', V)
+        self.subgrid_volume = V
+        print('Fill grid volume:', int(self.total_volume))
+        print('Target subgrid volume:', int(self.model_limit))
+        print('Actual subgrid volume:', V)
+        print('Number of subgrids:', int(self.total_volume)//V)
 
 if __name__=='__main__':
     model_limit = 10000
 
     param = {}
     param['T_eff'] = (6000, 10000, 100)
-    param['log(g)'] = (3, 5, 0.5)
+    param['log(g)'] = (3, 5, 0.1)
     param['[M/H]'] = (-0.8, 0.8, 0.1)
     param['v*sin(i)'] = (0, 200, 10)
-    param['vmicro'] = (0, 2, 1)
+    param['vmicro'] = (0, 5, 0.5)
 
     P = Partition(param, model_limit)
     P.optimize_partition()
