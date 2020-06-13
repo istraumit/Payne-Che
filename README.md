@@ -1,5 +1,7 @@
 # Payne-Che
-The Payne code with Chebyshev polynomials
+The [Payne](https://en.wikipedia.org/wiki/Cecilia_Payne-Gaposchkin) code with [Chebyshev](https://en.wikipedia.org/wiki/Pafnuty_Chebyshev) polynomials
+
+The original Payne code: https://github.com/tingyuansen/The_Payne
 
 Creating random grids
 ---------------------
