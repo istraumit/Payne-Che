@@ -60,10 +60,9 @@ class Partition:
             V *= n
             print(' '*4, p, ':', n)
         self.subgrid_volume = V
-        print('Fill grid volume:', int(self.total_volume))
+        print('Full grid volume:', int(self.total_volume))
         print('Target subgrid volume:', int(self.model_limit))
         print('Actual subgrid volume:', V)
-        print('Number of subgrids:', int(self.total_volume)//V)
 
 if __name__=='__main__':
     model_limit = 10000

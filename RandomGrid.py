@@ -62,7 +62,6 @@ class RandomGrid:
 
     def sample_model(self):
         p = self.sample_point_in_param_space()
-        print(p)
         spectrum = []
         for i in range(len(self.CUBES)):
             v = interpn(self.axes, self.CUBES[i], p)

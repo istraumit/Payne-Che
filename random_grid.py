@@ -4,6 +4,7 @@ from Partition import *
 from run_GSSP import *
 from Grid import *
 from RandomGrid import *
+from Subgrid import *
 
 DEBUG = True
 
@@ -49,44 +50,50 @@ PART = Partition(grid, models_limit)
 PART.optimize_partition()
 PART.check()
 
-subgrid = {}
-for p in param_names:
-    n = int(PART.dims_info[p].length)
-    subgrid[p] = (grid[p][0], grid[p][0]+n*grid[p][2], grid[p][2])
-
-print('-'*25)
-print('Current subgrid:')
-for p in subgrid: print(p, subgrid[p])
+if not os.path.exists(rnd_grid_dir):
+    os.makedirs(rnd_grid_dir)
 
 print('-'*25)
 sample_density = float(opt['N_models_to_sample'][0]) / PART.total_volume
 print('Sample density:', sample_density)
 
-subgrid_samples = int(PART.subgrid_volume * sample_density)
-assert subgrid_samples > 0
+SUB = Subgrid(grid, PART, param_names)
+n_sub = 0
+while SUB.next_subgrid():
 
-print('Subgrid samples:', subgrid_samples)
+    print('-'*25)
+    print('Current subgrid:')
+    for p in SUB.subgrid: print(p, SUB.subgrid[p])
+    print('Volume:', SUB.volume())
+    n_sub += 1
+    
+    subgrid_samples = int(SUB.volume() * sample_density)
+    assert subgrid_samples > 0
 
-GSSP_run_cmd = opt['GSSP_run_cmd'][0]
-print('>>>> RUNNING GSSP')
-run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd)
-print('>>>> GSSP FINISHED')
+    print('Subgrid samples:', subgrid_samples)
 
-print('Loading subgrid')
-GRID = Grid('rgs_files', '.')
-GRID.load()
-print('Subgrid loaded, sampling random grid')
+    if DEBUG: continue
 
-if not os.path.exists(rnd_grid_dir):
-    os.makedirs(rnd_grid_dir)
+    GSSP_run_cmd = opt['GSSP_run_cmd'][0]
+    print('>>>> RUNNING GSSP')
+    run_GSSP_grid('subgrid.inp', SUB.subgrid, wave, GSSP_run_cmd)
+    print('>>>> GSSP FINISHED')
 
-prefix = '%.0f'%(time.time()*1.e6)
+    print('Loading subgrid')
+    GRID = Grid('rgs_files', '.')
+    GRID.load()
+    print('Subgrid loaded, sampling random grid')
 
-RND = RandomGrid(GRID)
-for i in range(subgrid_samples):
-    fn = prefix + '_' + str(i).zfill(8) + '.npz'
-    pp, sp = RND.sample_model()
-    np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+    prefix = '%.0f'%(time.time()*1.e6)
+
+    RND = RandomGrid(GRID)
+    for i in range(subgrid_samples):
+        fn = prefix + '_' + str(i).zfill(8) + '.npz'
+        pp, sp = RND.sample_model()
+        np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+
+print('-'*25)
+print('Number of subgrids visited:', n_sub)    
 
 print('Done.')
 

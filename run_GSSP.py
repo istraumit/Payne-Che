@@ -59,15 +59,16 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
     Kurucz: use Kurucz models if True, otherwise LLmodels
     """
 
-    def s(L):
-        return [str(x) for x in L]
+    def s(L, ns):
+        fmt = '%.' + str(ns) + 'f'
+        return [fmt%x for x in L]
 
-    Teff = s(parameters['T_eff'])
-    logg = s(parameters['log(g)'])
-    vsini = s(parameters['v*sin(i)'])
-    vmicro = s(parameters['v_micro'])
-    metal = s(parameters['[M/H]'])
-    wave = s(wave_range)
+    Teff = s(parameters['T_eff'], 0)
+    logg = s(parameters['log(g)'], 1)
+    vsini = s(parameters['v*sin(i)'], 0)
+    vmicro = s(parameters['v_micro'], 1)
+    metal = s(parameters['[M/H]'], 1)
+    wave = s(wave_range, 0)
 
     with open(output_path, 'w') as f:
         f.write(' '.join([Teff[0], Teff[2], Teff[1]]) + '\n' )
