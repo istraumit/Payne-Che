@@ -48,10 +48,6 @@ class RandomGrid:
 
         self.CUBES = CUBES
 
-        print('Number of models:', len(grid.models))
-        print('Parameter ranges:', params_ranges)
-        print('Spectrum length:', L)
-
     def sample_point_in_param_space(self):
         pp = []
         for pr in self.params_ranges:
@@ -60,15 +56,19 @@ class RandomGrid:
             pp.append(p)
         return np.array(pp)
 
-    def sample_model(self):
-        p = self.sample_point_in_param_space()
+    def interpolate(self, p):
         spectrum = []
         for i in range(len(self.CUBES)):
             v = interpn(self.axes, self.CUBES[i], p)
             spectrum.append(v)
-        return p, np.array(spectrum)
+        return np.array(spectrum)
+    
+    def sample_model(self):
+        p = self.sample_point_in_param_space()
+        sp = self.interpolate(p)
+        return p, sp
         
-
+    
 
 
 

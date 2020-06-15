@@ -14,12 +14,10 @@ class StellarParams:
         self.vmicro = vmicro
         
     def as_tuple(self):
-        #return (self.Teff, self.logg, self.vsini, self.MH, self.vmicro)
-        return (self.Teff, self.logg, self.vsini)
+        return (self.Teff, self.logg, self.vsini, self.vmicro, self.MH)
         
     def __str__(self):
-        #return 'Teff=%.0f, log(g)=%.2f, v*sin(i)=%.0f, [M/H]=%.1f, v_micro=%.1f'%self.as_tuple()
-        return 'Teff=%.0f, log(g)=%.2f, v*sin(i)=%.0f'%self.as_tuple()
+        return 'Teff=%.0f, log(g)=%.2f, v*sin(i)=%.0f, v_micro=%.1f, [M/H]=%.1f,'%self.as_tuple()
         
     def __repr__(self):
         return self.__str__()
@@ -77,8 +75,7 @@ class Grid:
         self.cache = join(self.cache_folder, '__grid_'+h+'.npy')
 
     def load(self):
-        if not os.path.isfile(self.cache):
-            print('Grid cache not found, loading from the source')
+        if True:
             L, names = [],[]
             grid_files = [f for f in os.listdir(self.folder) if f.endswith(".rgs")]
             total = len(grid_files)
@@ -95,7 +92,7 @@ class Grid:
                 processed += 1
                 progress = 100 * processed/total
                 if progress>report_next:
-                    print('%.0f%% '%progress, end='', flush=True)
+                    #print('%.0f%% '%progress, end='', flush=True)
                     report_next += 1
                 
             np.save(self.cache, L)
