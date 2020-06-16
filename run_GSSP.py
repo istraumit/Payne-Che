@@ -68,7 +68,7 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
     vsini = s(parameters['v*sin(i)'], 0)
     vmicro = s(parameters['v_micro'], 1)
     metal = s(parameters['[M/H]'], 1)
-    wave = s(wave_range, 0)
+    wave = s(wave_range, 4)
 
     with open(output_path, 'w') as f:
         f.write(' '.join([Teff[0], Teff[2], Teff[1]]) + '\n' )

@@ -22,6 +22,10 @@ N_models = int(opt['N_models_to_sample'][0])
 wave = [float(x) for x in opt['wavelength']]
 GSSP_run_cmd = opt['GSSP_run_cmd'][0]
 
+rnd_grid_dir = opt['output_dir'][0]
+if not os.path.exists(rnd_grid_dir):
+    os.makedirs(rnd_grid_dir)
+
 grid = {}
 for o in opt:
     if o in param_names:
