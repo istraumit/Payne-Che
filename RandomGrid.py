@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 from scipy.interpolate import interpn
+from multiprocessing import Pool
 from Grid import *
 
 class RandomGrid:
@@ -56,20 +57,33 @@ class RandomGrid:
             pp.append(p)
         return np.array(pp)
 
-    def interpolate(self, p):
+    def interpolate_serial(self, p):
         spectrum = []
         for i in range(len(self.CUBES)):
             v = interpn(self.axes, self.CUBES[i], p)
             spectrum.append(v)
         return np.array(spectrum)
     
+    def interpolate_parallel(self, p):
+        work = [(self.axes, C, p) for C in self.CUBES]
+        
+        with Pool() as pool:
+            print('Running interpolation with', pool._processes, 'processes')
+            spectrum = pool.map(interp_call, work)
+            
+        return np.array(spectrum)
+    
+    def interpolate(self, p):
+        return self.interpolate_parallel(p)
+    
     def sample_model(self):
         p = self.sample_point_in_param_space()
         sp = self.interpolate(p)
         return p, sp
         
+def interp_call(W):
+    return interpn(W[0], W[1], W[2])
     
-
 
 
 
