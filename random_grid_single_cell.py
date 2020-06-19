@@ -19,7 +19,7 @@ def sample_point(grid):
     
 def printt(*arg):
     t = '%.2f'%time()
-    print(t, arg)    
+    print(t, *arg)    
 
 opt = parse_inp()
 

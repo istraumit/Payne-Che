@@ -98,14 +98,16 @@ class NNTraining:
         self.CUDA = torch.cuda.is_available()
 
     def train_on_npz(self, npz_path, validation_fraction=0.1):
+        self.vf = validation_fraction
         data = np.load(npz_path)
         spectra = data['flux']
         labels  = data['labels']
+        self.wave = data['wvl']
         print('spectra', spectra.shape)
         print('labels', labels.shape)
         N_total = spectra.shape[0]
         N_valid = int(N_total * validation_fraction)
-        print(N_total, N_valid)
+        print('total/valid:', N_total, '/', N_valid)
 
         idx = torch.randperm(N_total)
         idx_valid = idx[:N_valid]
@@ -119,10 +121,13 @@ class NNTraining:
         if self.batch_size_valid>N_valid:
             self.batch_size_valid = N_valid
 
+        self.grid_info = data['grid'].item()
+
         self.train(training_labels, training_spectra, validation_labels, validation_spectra)
 
 
     def train(self, training_labels, training_spectra, validation_labels, validation_spectra):
+        print('start training')
         # run on cuda
         if self.CUDA:
             self.dtype = torch.cuda.FloatTensor
@@ -130,9 +135,9 @@ class NNTraining:
         else:
             self.dtype = torch.FloatTensor
             torch.set_default_tensor_type('torch.FloatTensor')
-
+        print('cuda tensor type set')
         x, y, x_valid, y_valid = self.scale_variables(training_labels, training_spectra, validation_labels, validation_spectra)
-
+        print('variables scaled')
 
         # assume L1 loss
         self.loss_fn = torch.nn.L1Loss(reduction = 'mean')
@@ -149,6 +154,7 @@ class NNTraining:
     #--------------------------------------------------------------------------------------------
         # train in batches
         self.batch_init(x, x_valid)
+        print('batch initialized')
 
         for e in range(self.num_steps):
             self.step(x, y)
@@ -233,6 +239,7 @@ class NNTraining:
         x_valid = (validation_labels-x_min)/(x_max-x_min) - 0.5
 
         # make pytorch variables
+        print('creating pytorch variables')
         x = Variable(torch.from_numpy(x)).type(dtype)
         y = Variable(torch.from_numpy(training_spectra), requires_grad=False).type(dtype)
         x_valid = Variable(torch.from_numpy(x_valid)).type(dtype)
@@ -254,7 +261,8 @@ class NNTraining:
         b_array_2 = model_numpy[5]
 
         # save parameters and remember how we scaled the labels
-        np.savez("NN_normalized_spectra.npz",\
+        fn = 'NN_n%i_b%i_v%.1f.npz'%(self.num_neurons, self.batch_size, self.vf)
+        np.savez(fn,\
                 w_array_0 = w_array_0,\
                 w_array_1 = w_array_1,\
                 w_array_2 = w_array_2,\
@@ -262,7 +270,9 @@ class NNTraining:
                 b_array_1 = b_array_1,\
                 b_array_2 = b_array_2,\
                 x_max=self.x_max,\
-                x_min=self.x_min,)
+                x_min=self.x_min,
+                wave = self.wave,
+                grid=self.grid_info,)
 
 
 
