@@ -24,15 +24,13 @@ class StellarParams:
 
 
 class Model:
-    def __init__(self, name, wave, flux):
-        assert(type(wave)==np.ndarray)
+    def __init__(self, name, flux):
         assert(type(flux)==np.ndarray)
-        self.wave = wave
         self.flux = flux
         self.name = name
         
     def __str__(self):
-        return self.name + '[%d %d]'%(len(self.wave), len(self.flux))
+        return self.name
         
     def __repr__(self):
         return self.__str__()
@@ -51,62 +49,32 @@ class Model:
 
 
 class Grid:
-    def __init__(self, grid_folder, cache_folder):
+    def __init__(self, grid_folder):
         self.folder = grid_folder
         self.models = []
         self.models_dict = {}
-        h = hashlib.md5(grid_folder.encode('utf-8')).hexdigest()
-        self.cache_folder = cache_folder
-        self.cache = join(cache_folder, '__grid_'+h+'.npy')
 
-    def _load_models_from_storage(self):
-        A = np.load(self.cache)
-        N = []
-        with open(self.cache+'.names') as f:
+    def load_flux(fn):
+        flux = []
+        with open(fn) as f:
             for line in f:
-                N.append(line)
-            
-        for i in range(A.shape[0]):
-            M = Model(N[i], A[i,0,:], A[i,1,:])
-            self.models.append(M)
-            self.models_dict[str(M.stellar_params())] = M
-
-    def set_cache(self, h):
-        self.cache = join(self.cache_folder, '__grid_'+h+'.npy')
+                arr = line.split()
+                flux.append(float(arr[1]))
+        return np.array(flux)
 
     def load(self):
         if True:
             L, names = [],[]
             grid_files = [f for f in os.listdir(self.folder) if f.endswith(".rgs")]
-            total = len(grid_files)
-            processed = 0
-            report_next = 1
             for grid_fn in grid_files:
                 fn = join(self.folder, grid_fn)
-                rgs = np.loadtxt(fn)
-
-                model_wave = rgs[:,0]
-                model_flux = rgs[:,1]
-                L.append( [model_wave, model_flux] )
-                names.append(grid_fn)
-                processed += 1
-                progress = 100 * processed/total
-                if progress>report_next:
-                    #print('%.0f%% '%progress, end='', flush=True)
-                    report_next += 1
+                model_flux = Grid.load_flux(fn)
+                M = Model(grid_fn, model_flux)
+                self.models.append(M)
+                self.models_dict[str(M.stellar_params())] = M
                 
-            np.save(self.cache, L)
-            with open(self.cache+'.names', 'w') as f:
-                for name in names:
-                    f.write(name)
-                    f.write('\n')
-
-        self._load_models_from_storage()
-        
     def __repr__(self):
         r = 'Grid with '+str(len(self.models))+' models'
-        if os.path.isfile(self.cache):
-            r += '; '+self.cache+' exists.'
         return r
         
 

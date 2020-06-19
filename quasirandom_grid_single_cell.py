@@ -94,7 +94,7 @@ for i in range(N_models):
     continue
     run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd)
 
-    GRID = Grid('rgs_files', '.')
+    GRID = Grid('rgs_files')
     GRID.load()
 
     RND = RandomGrid(GRID)

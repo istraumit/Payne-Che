@@ -34,7 +34,7 @@ class RandomGrid:
                 indices.append(ind)
             CUBE[tuple(indices)] = grid.models[i]
 
-        L = len(grid.models[0].wave)
+        L = len(grid.models[0].flux)
         shape = tuple([len(ax) for ax in axes])
         CUBES = []
         for k in range(L): CUBES.append(np.ndarray(shape=shape))

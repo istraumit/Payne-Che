@@ -6,6 +6,7 @@ from Grid import *
 from RandomGrid import *
 from Subgrid import *
 from random_grid_common import *
+from time import time
 
 def sample_point(grid):
     pp = {}
@@ -16,6 +17,10 @@ def sample_point(grid):
         pp[p] = v
     return pp
     
+def printt(*arg):
+    t = '%.2f'%time()
+    print(t, arg)    
+
 opt = parse_inp()
 
 N_models = int(opt['N_models_to_sample'][0])
@@ -45,17 +50,22 @@ for i in range(N_models):
         start = pp[p] - pp[p]%step
         subgrid[p] = [start, start + step, step]
         print(p, subgrid[p])
-    
+
+    printt('Running GSSP')    
     run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd)
 
-    GRID = Grid('rgs_files', '.')
+    printt('Loading grid')
+    GRID = Grid('rgs_files')
     GRID.load()
 
+    printt('Creating random grid')
     RND = RandomGrid(GRID)
 
-    prefix = '%.0f'%(time.time()*1.e6)
+    printt('Interpolating')
+    prefix = '%.0f'%(time()*1.e6)
     fn = prefix + '.npz'
     sp = RND.interpolate(np.array(pp_list))
+    printt('Saving npz')
     np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
 
 
