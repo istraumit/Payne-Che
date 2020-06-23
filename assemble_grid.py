@@ -18,7 +18,7 @@ fluxes, params = [],[]
 for fn in files:
     if fn == grid_fn: continue
     npz = np.load(os.path.join(path, fn))
-    fluxes.append(npz['flux'])
+    fluxes.append(npz['flux'][:,0])
     param_dict = npz['labels'].item()
     pp = []
     for p in param_names:
