@@ -9,12 +9,6 @@ from random_grid_common import *
 import sobol_seq
 from scipy.interpolate import interp1d
 
-def sample_point(n):
-    pp = {}
-    for p in range(len(param_names)):
-        pp[param_names[p]] = theta[n][p]
-    return pp
-    
 opt = parse_inp()
 
 N_models = int(opt['N_models_to_sample'][0])
@@ -30,13 +24,14 @@ for o in opt:
     if o in param_names:
         grid[o] = [float(x) for x in opt[o]]
 
-
 ###############################################################
 #       Example of how to generate a quasi-random grid
 ###############################################################
 
+grid_params = [p for p in param_names if grid[p][0]!=grid[p][1]]
+
 # --- Specify number of free parameters and total grid points -
-N_param = len(grid)
+N_param = len(grid_params)
 
 # --- Calculate Sobol numbers for random sampling -------------
 # This creates a N_grid x N_param matrix of quasi-random numbers
@@ -55,7 +50,7 @@ print()
 intrp_range = [0, 1]       
 
 # 1D linear interpolation functions
-intrp = [interp1d(intrp_range, grid[p][:2]) for p in param_names]
+intrp = [interp1d(intrp_range, grid[p][:2]) for p in grid_params]
 
 # --- Create final quasi-random sampled grid -----------------
 # We make a new matrix theta, where each column corresponds 
@@ -70,21 +65,24 @@ print(theta)
 print()
 
 for i in range(N_models):
-    pp = sample_point(i)
-    pp_list = []
-    for p in param_names: pp_list.append(pp[p])
+    pp_arr = theta[i,:]
+    pp = {}
+    for j,v in enumerate(grid_params):
+        pp[v] = pp_arr[j]
     
     print('-'*25)
     print('Sampled point:', pp)
     print('Current subgrid:')
     subgrid = {}
     for p in param_names:
-        step = grid[p][2]
-        start = pp[p] - pp[p]%step
-        subgrid[p] = [start, start + step, step]
+        if p in grid_params:
+            step = grid[p][2]
+            start = pp[p] - pp[p]%step
+            subgrid[p] = [start, start + step, step]
+        else:
+            subgrid[p] = grid[p]
         print(p, subgrid[p])
     
-    continue
     run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd)
 
     GRID = Grid('rgs_files')
@@ -94,7 +92,7 @@ for i in range(N_models):
 
     prefix = '%.0f'%(time.time()*1.e6)
     fn = prefix + '.npz'
-    sp = RND.interpolate(np.array(pp_list))
+    sp = RND.interpolate(pp_arr)
     np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
 
 
