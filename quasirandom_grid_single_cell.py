@@ -55,26 +55,19 @@ print()
 intrp_range = [0, 1]       
 
 # 1D linear interpolation functions
-T_eff_intrp = interp1d(intrp_range, grid['T_eff'][:2])
-logg_intrp = interp1d(intrp_range, grid['log(g)'][:2])
-vsini_intrp = interp1d(intrp_range, grid['v*sin(i)'][:2])
-v_micro_intrp = interp1d(intrp_range, grid['v_micro'][:2])
-MH_intrp = interp1d(intrp_range, grid['[M/H]'][:2])
+intrp = [interp1d(intrp_range, grid[p][:2]) for p in param_names]
 
 # --- Create final quasi-random sampled grid -----------------
 # We make a new matrix theta, where each column corresponds 
 # to one of the free parameters, whose ranges have been mapped
 # onto the Sobol numbers
 
-theta = np.array(
-    [T_eff_intrp(N_sobol[:, 0]).T, logg_intrp(N_sobol[:, 1]).T,
-     vsini_intrp(N_sobol[:, 2]).T, v_micro_intrp(N_sobol[:, 3]).T, MH_intrp(N_sobol[:, 4]).T]).T
-
+columns = [v(N_sobol[:,i]) for i,v in enumerate(intrp)]
+theta = np.vstack(columns).T
 print()
 print('------ N_grid x N_param quasi-random grid -------')
 print(theta)
 print()
-
 
 for i in range(N_models):
     pp = sample_point(i)
