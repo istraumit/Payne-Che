@@ -20,7 +20,7 @@ class RandomGrid:
         for ax in axes: ax.sort()
         self.axes = tuple([np.array(ax) for ax in axes])
         
-        params_ranges = [(min(ax), max(ax)) for ax in self.axes]
+        self.params_ranges = [(min(ax), max(ax)) for ax in self.axes]
 
         L = len(grid.models[0].flux)
         shape = tuple([len(ax) for ax in axes])
