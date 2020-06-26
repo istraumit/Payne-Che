@@ -6,7 +6,7 @@ from Grid import *
 
 class RandomGrid:
 
-    def __init__(self, grid):
+    def __init__(self, grid:Grid):
         assert(len(grid.models)>0)
         self.grid = grid
 
@@ -18,23 +18,23 @@ class RandomGrid:
                 axes[i].add( p[i] )
         axes = [list(s) for s in axes]
         for ax in axes: ax.sort()
-        self.axes = tuple([np.array(ax) for ax in axes])
         
-        self.params_ranges = [(min(ax), max(ax)) for ax in self.axes]
-
         L = len(grid.models[0].flux)
-        shape = tuple([len(ax) for ax in axes])
+        shape = tuple([len(ax) for ax in axes if len(ax)>1])
         CUBES = []
         for k in range(L): CUBES.append(np.ndarray(shape=shape))
 
         for i in range(len(grid.models)):
             indices = []
             for j in range(len(axes)):
+                if len(axes[j])<2: continue
                 ind = axes[j].index(params_list[i][j])
                 indices.append(ind)
             for k in range(L):
                 CUBES[k][tuple(indices)] = grid.models[i].flux[k]
-
+                
+        self.axes = tuple([np.array(ax) for ax in axes if len(ax)>1])
+        self.params_ranges = [(min(ax), max(ax)) for ax in self.axes]
         self.CUBES = CUBES
 
     def sample_point_in_param_space(self):
@@ -62,6 +62,11 @@ class RandomGrid:
         return np.array(spectrum)
     
     def interpolate(self, p):
+        if len(p)!=len(self.axes):
+            raise Exception('Wrong number of dimensions for the point')
+        for i,v in enumerate(p):
+            if not (self.params_ranges[i][0] <= v <= self.params_ranges[i][1]):
+                raise Exception('Value %.2e on dimension %i is outside grid bounds'%(v, i))
         return self.interpolate_parallel(p)
     
     def sample_model(self):
