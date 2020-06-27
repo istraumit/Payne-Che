@@ -1,5 +1,6 @@
 import sys, gc
 import os
+from math import isnan
 import numpy as np
 from random_grid_common import *
 
@@ -18,11 +19,17 @@ fluxes, params = [],[]
 for fn in files:
     if fn == grid_fn: continue
     npz = np.load(os.path.join(path, fn))
-    fluxes.append(npz['flux'][:,0])
+    flx = npz['flux'][:,0]
+    flx_sum = sum(flx)
+    if isnan(flx_sum):
+        print('NANs in flux: excluded from grid')
+        continue
+    fluxes.append(flx)
     param_dict = npz['labels'].item()
     pp = []
     for p in param_names:
-        pp.append(param_dict[p])
+        if p in param_dict:
+            pp.append(param_dict[p])
     params.append(pp)
     print(fn)
 
