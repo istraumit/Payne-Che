@@ -15,6 +15,10 @@ N_models = int(opt['N_models_to_sample'][0])
 wave = [float(x) for x in opt['wavelength']]
 GSSP_run_cmd = opt['GSSP_run_cmd'][0]
 
+Kurucz = True
+if 'Kurucz' in opt:
+    Kurucz = opt['Kurucz'][0].lower() in ['true', 'yes', '1']
+
 rnd_grid_dir = opt['output_dir'][0]
 if not os.path.exists(rnd_grid_dir):
     os.makedirs(rnd_grid_dir)
@@ -83,7 +87,7 @@ for i in range(N_models):
             subgrid[p] = grid[p]
         print(p, subgrid[p])
     
-    run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd)
+    run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd, Kurucz=Kurucz)
 
     GRID = Grid('rgs_files')
     GRID.load()
