@@ -87,7 +87,10 @@ for i in range(N_models):
             subgrid[p] = grid[p]
         print(p, subgrid[p])
     
-    run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd, Kurucz=Kurucz)
+    ok = run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd, Kurucz=Kurucz)
+    if not ok:
+        print('GSSP exited with error')
+        exit()
 
     GRID = Grid('rgs_files')
     GRID.load()

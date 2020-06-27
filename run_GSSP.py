@@ -93,12 +93,18 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
         
     shutil.rmtree('rgs_files', ignore_errors=True)
     
-    o = sp.check_output(GSSP_cmd + ' ' + output_path, shell=True, stderr=sp.STDOUT)
+    ok = True
     log_fn = output_path+'.log'
-    with open(log_fn, 'wb') as f:
-        f.write(o)
+    try:
+        o = sp.check_output(GSSP_cmd + ' ' + output_path, shell=True, stderr=sp.STDOUT)
+    except sp.CalledProcessError as err:
+        print(err.output)
+        with open(log_fn, 'wb') as f: f.write(err.output)
+        ok = False
+    else:
+        with open(log_fn, 'wb') as f: f.write(o)
 
-
+    return ok
 
 
 if __name__ == '__main__':
