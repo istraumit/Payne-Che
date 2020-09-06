@@ -39,16 +39,21 @@ for o in opt:
 for i in range(N_models):
     pp = sample_point(grid)
     pp_list = []
-    for p in param_names: pp_list.append(pp[p])
+    for p in param_names:
+        if grid[p][0]==grid[p][1]: continue
+        pp_list.append(pp[p])
     
     print('-'*25)
     print('Sampled point:', pp)
     print('Current subgrid:')
     subgrid = {}
     for p in param_names:
-        step = grid[p][2]
-        start = pp[p] - pp[p]%step
-        subgrid[p] = [start, start + step, step]
+        if grid[p][0]==grid[p][1]:
+            subgrid[p] = [grid[p][0], grid[p][0], 1.0]
+        else:
+            step = grid[p][2]
+            start = pp[p] - pp[p]%step
+            subgrid[p] = [start, start + step, step]
         print(p, subgrid[p])
 
     printt('Running GSSP')    
