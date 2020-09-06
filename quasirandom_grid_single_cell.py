@@ -68,6 +68,8 @@ print('------ N_grid x N_param quasi-random grid -------')
 print(theta)
 print()
 
+np.savetxt('theta.data', theta)
+
 for i in range(N_models):
     pp_arr = theta[i,:]
     pp = {}
