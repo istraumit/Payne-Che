@@ -5,18 +5,24 @@ from Fit import Fit
 import numpy as np
 import matplotlib.pyplot as plt
 from random_grid_common import *
-from MCMC_Fit import MCMC_Fit
+from fit_common import save_figure
 
-def fit_APOGEE(path, NN, Cheb_order, do_mcmc):
+def fit_APOGEE(path, NN, Cheb_order):
 
     spec = rdspec(path)
-    wave_ = spec.wave
+    
     if len(spec.flux.shape)==2:
-        flux_ = spec.flux[0,:]
-        err_ = spec.err[0,:]
+        wave_ = spec.wave.flatten()
+        flux_ = spec.flux.flatten()
+        err_ = spec.err.flatten()
     else:
+        wave_ = spec.wave
         flux_ = spec.flux
         err_ = spec.err
+
+    wave_ = wave_[::-1]
+    flux_ = flux_[::-1]
+    err_  = err_[::-1]
 
     wave, flux, err = [],[],[]
     for i,v in enumerate(flux_):
@@ -30,11 +36,9 @@ def fit_APOGEE(path, NN, Cheb_order, do_mcmc):
     err /= flux_mean
 
     fit = Fit(NN, Cheb_order)
-    if do_mcmc:
-        mcmc = MCMC_Fit(fit)
-        popt, MAP, model_spec, chi2_func = mcmc.run(wave, flux, err)
-    else:
-        popt, pcov, model_spec, chi2_func = fit.run(wave, flux, err)
+    res = fit.run(wave, flux, err)
+    
+    popt, pcov, model_spec, chi2_func = res.popt, res.pcov, res.model, res.chi2_func
     
     CHI2 = chi2_func(popt)
     print('Chi^2:', '%.2e'%CHI2)
@@ -58,31 +62,29 @@ def fit_APOGEE(path, NN, Cheb_order, do_mcmc):
 
     print('RV:', '%.2f'%popt[-1], 'km/s')
     print('-'*25)
-
-    plt.title(os.path.basename(path))
+    
+    name = os.path.basename(path)[:-5]
+    plt.title(name)
     plt.plot(wave, flux, label='Data')
     plt.plot(wave, model_spec, label='Model')
     plt.legend()
     plt.xlabel('Wavelength [A]')
     plt.ylabel('Flux')
-    plt.show()
+    save_figure('FIT/'+name+'.png')
 
 
 if __name__=='__main__':
-    if len(sys.argv)<2:
-        print('Use:', sys.argv[0], '<path_to_spectrum>')
+    if len(sys.argv)<3:
+        print('Use:', sys.argv[0], '<path_to_spectrum> <path_to_NN>')
         exit()
 
     fn = sys.argv[1]
-    do_mcmc = False
-    if len(sys.argv)>2 and sys.argv[2].lower()=='mcmc':
-        do_mcmc = True
 
-    NN_path = '/STER/ilyas/NN/NN_QRND_APOGEE.npz'
+    NN_path = sys.argv[2]
     NN = Network()
     NN.read_in(NN_path)
 
-    fit_APOGEE(fn, NN, 10, do_mcmc)
+    fit_APOGEE(fn, NN, 10)
 
 
 

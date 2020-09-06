@@ -21,6 +21,10 @@ def doppler_shift(wavelength, flux, dv):
     return new_flux
 
 
+class FitResult:
+    pass
+
+
 class Fit:
 
     def __init__(self, network:Network, Cheb_order, tol=5.e-4):
@@ -84,19 +88,29 @@ class Fit:
                     bounds = bounds, ftol = self.tol, xtol = self.tol, absolute_sigma = True, method = 'trf')
         model_spec = fit_func([], *popt)
 
+        res = FitResult()
+        res.model = model_spec
+        res.popt_scaled = np.copy(popt)
+        res.pcov_scaled = np.copy(pcov)
+
         x_min = self.network.x_min
         x_max = self.network.x_max
         # rescale the result back to original unit
         popt[:nnl] = (popt[:nnl]+0.5)*(x_max-x_min) + x_min
         pcov[:nnl,:nnl] = pcov[:nnl,:nnl]*(x_max-x_min)
+
+        res.popt = popt
+        res.pcov = pcov
         
         def chi2_func(labels):
             model = fit_func([], *labels)
             diff = (norm_spec - model) / spec_err
             chi2 = np.sum(diff**2)
-            return chi2
+            return chi2/len(model)
         
-        return popt, pcov, model_spec, chi2_func
+        res.chi2_func = chi2_func
+        
+        return res
 
 
 
