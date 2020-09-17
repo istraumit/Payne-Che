@@ -2,6 +2,7 @@ import sys, os
 from SDSS import rdspec, Spec1D
 from Network import Network
 from Fit import Fit
+from UncertFit import UncertFit
 import numpy as np
 import matplotlib.pyplot as plt
 from common import param_names, param_units
@@ -36,11 +37,13 @@ def fit_APOGEE(path, NN, Cheb_order):
     err /= flux_mean
 
     fit = Fit(NN, Cheb_order)
-    res = fit.run(wave, flux, err)
+    unc_fit = UncertFit(fit)
+    res = unc_fit.run(wave, flux, err)
     
     popt, pcov, model_spec, chi2_func = res.popt, res.pcov, res.model, res.chi2_func
     
     CHI2 = chi2_func(popt)
+    print('-'*25)
     print('Chi^2:', '%.2e'%CHI2)
 
     if not os.path.exists('FIT'):
@@ -57,7 +60,7 @@ def fit_APOGEE(path, NN, Cheb_order):
     k = 0
     for i,v in enumerate(param_names):
         if NN.grid[v][0]!=NN.grid[v][1]:
-            print(v, ':', '%.2f'%popt[k], param_units[i])
+            print(v, ':', '%.2f'%popt[k], '+/-', '%.4f'%res.uncert[k], param_units[i])
             k += 1
 
     print('RV:', '%.2f'%popt[-1], 'km/s')
