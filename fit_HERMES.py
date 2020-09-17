@@ -112,7 +112,7 @@ def fit_HERMES(night, seq_id, NN, wave_start, wave_end, Cheb_order=5, slices=Fal
 
     fit = Fit(NN, Cheb_order)
     fit_res = fit.run(wave, flux, err)
-    CHI2 = fit_res.chi2_func(fit_res.popt_scaled)
+    CHI2 = fit_res.chi2_func(fit_res.popt)
     print('Chi^2:', '%.2e'%CHI2)
 
     with open('FIT/LOG', 'a') as flog:

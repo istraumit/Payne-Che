@@ -103,10 +103,11 @@ class Fit:
         res.pcov = pcov
         
         def chi2_func(labels):
+            labels[:nnl] = (labels[:nnl] - x_min)/(x_max - x_min) - 0.5
             model = fit_func([], *labels)
             diff = (norm_spec - model) / spec_err
             chi2 = np.sum(diff**2)
-            return chi2/len(model)
+            return chi2
         
         res.chi2_func = chi2_func
         
