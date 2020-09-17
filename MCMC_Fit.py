@@ -26,8 +26,8 @@ class MCMC_Fit:
     def __init__(self, fit:Fit):
         self.fit = fit
         self.nwalkers = 100
-        self.nsamples = 100
-        self.burn_in = 20
+        self.nsamples = 1000
+        self.burn_in = 100
         
     def run(self, wave, flux, flux_err):
         che = self.fit.Cheb_order
