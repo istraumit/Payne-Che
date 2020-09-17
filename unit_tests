@@ -1,0 +1,2 @@
+python fit_APOGEE.py /home/ilyas/SDSS/validation/dither/spectra/apVisit-r13-10876-58268-044.fits /STER/ilyas/NN/2D/NN_n1000_b1024_v0.1.npz
+python fit_HERMES.py 20190501 919830 4200 5800

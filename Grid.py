@@ -2,7 +2,6 @@ import os
 import sys
 from os.path import join
 import numpy as np
-import hashlib
 
 class StellarParams:
     

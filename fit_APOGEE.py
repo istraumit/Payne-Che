@@ -4,7 +4,7 @@ from Network import Network
 from Fit import Fit
 import numpy as np
 import matplotlib.pyplot as plt
-from random_grid_common import *
+from common import param_names, param_units
 from fit_common import save_figure
 
 def fit_APOGEE(path, NN, Cheb_order):

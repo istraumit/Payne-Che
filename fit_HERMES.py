@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy import interpolate
 from bisect import bisect
 from DER_SNR import DER_SNR
-from random_grid_common import *
+from common import param_names, param_units
 from Network import Network
 from Fit import Fit
 from MCMC_Fit import MCMC_Fit
