@@ -27,7 +27,10 @@ class UncertFit:
                     pp[i] = x
                     yy.append(chi2_func(pp))
                 poly_coef = np.polyfit(xx, yy, 2)
-                sigma = 1.0/math.sqrt(poly_coef[0])
+                if poly_coef[0]>0:
+                    sigma = math.sqrt(2.0/poly_coef[0])
+                else:
+                    sigma = 0.0
                 uncert.append(sigma)
                 i+=1
         res.uncert = uncert
