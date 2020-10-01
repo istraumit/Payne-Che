@@ -9,9 +9,9 @@ from DER_SNR import DER_SNR
 from common import param_names, param_units
 from Network import Network
 from Fit import Fit
-from MCMC_Fit import MCMC_Fit
 from numpy.polynomial.chebyshev import chebval
 from fit_common import save_figure
+from UncertFit import UncertFit
 
 def load_spectrum(fn):
 
@@ -111,7 +111,8 @@ def fit_HERMES(night, seq_id, NN, wave_start, wave_end, Cheb_order=5, slices=Fal
         os.makedirs('FIT')
 
     fit = Fit(NN, Cheb_order)
-    fit_res = fit.run(wave, flux, err)
+    unc_fit = UncertFit(fit)
+    fit_res = unc_fit.run(wave, flux, err)
     CHI2 = fit_res.chi2_func(fit_res.popt)
     print('Chi^2:', '%.2e'%CHI2)
 
@@ -122,9 +123,11 @@ def fit_HERMES(night, seq_id, NN, wave_start, wave_end, Cheb_order=5, slices=Fal
         flog.write(s+'\n')
 
     print('-'*25)
-
+    k = 0
     for i,v in enumerate(param_names):
-        print(v, ':', '%.2f'%fit_res.popt[i], param_units[i])
+        if NN.grid[v][0]!=NN.grid[v][1]:
+            print(v, ':', '%.2f'%fit_res.popt[k], '+/-', '%.4f'%fit_res.uncert[k], param_units[i])
+            k += 1
 
     print('RV:', '%.2f'%fit_res.popt[-1], 'km/s')
     print('-'*25)
