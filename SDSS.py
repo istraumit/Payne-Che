@@ -118,14 +118,14 @@ def rdspec(filename=None):
         # HISTORY APSTAR:  HDU7 - Telluric Error                                          
         # HISTORY APSTAR:  HDU8 - LSF coefficients                                        
         # HISTORY APSTAR:  HDU9 - RV and CCF structure  
-        flux = fits.getdata(filename,1)
+        flux = fits.getdata(filename,1)[0,:]
         spec = Spec1D(flux)
         spec.filename = filename
         spec.sptype = "apStar"
         spec.waveregime = "NIR"
         spec.instrument = "APOGEE"
         spec.head = fits.getheader(filename,0)
-        spec.err = fits.getdata(filename,2)
+        spec.err = fits.getdata(filename,2)[0,:]
         spec.mask = fits.getdata(filename,3)
         spec.sky = fits.getdata(filename,4)
         spec.skyerr = fits.getdata(filename,5)
