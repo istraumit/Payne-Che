@@ -11,7 +11,7 @@ from fit_common import save_figure
 def fit_APOGEE(path, NN, Cheb_order):
 
     spec = rdspec(path)
-    
+    print(spec.wave.shape, spec.flux.shape, spec.err.shape)
     if len(spec.flux.shape)==2:
         wave_ = spec.wave.flatten()
         flux_ = spec.flux.flatten()
@@ -37,7 +37,7 @@ def fit_APOGEE(path, NN, Cheb_order):
     err /= flux_mean
 
     fit = Fit(NN, Cheb_order)
-    unc_fit = UncertFit(fit)
+    unc_fit = UncertFit(fit, 22500)
     res = unc_fit.run(wave, flux, err)
     
     popt, pcov, model_spec, chi2_func = res.popt, res.pcov, res.model, res.chi2_func

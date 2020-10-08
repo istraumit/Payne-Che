@@ -111,7 +111,7 @@ def fit_HERMES(night, seq_id, NN, wave_start, wave_end, Cheb_order=5, slices=Fal
         os.makedirs('FIT')
 
     fit = Fit(NN, Cheb_order)
-    unc_fit = UncertFit(fit)
+    unc_fit = UncertFit(fit, 85000)
     fit_res = unc_fit.run(wave, flux, err)
     CHI2 = fit_res.chi2_func(fit_res.popt)
     print('Chi^2:', '%.2e'%CHI2)
