@@ -3,21 +3,36 @@ The [Payne](https://en.wikipedia.org/wiki/Cecilia_Payne-Gaposchkin) code with [C
 
 The original Payne code: https://github.com/tingyuansen/The_Payne
 
-Creating random grids: method 1
--------------------------------
-1. Use 'free -g' command to check for available memory (column 'available', not 'free' memory).
-2. Make sure that the free space on your /scratch file system is larger than the memory amount.
-3. Move the code to /scratch file system.
-4. Edit 'random_grid.conf' file, specify the 'memory_limit_GB' and other parameters.
-5. Run 'random_grid.py'.
+The reference paper (Ting et al, 2019): https://doi.org/10.3847/1538-4357/ab2331
 
-Method 1 partitions the full grid into a series of subgrids and randomly samples models within each subgrid. Designed to overcome memory limitation when dealing with large grids.
+This is a modified version of the original Payne code, which estimates stellar parameters based on a normalized spectrum. The modified code 
+performs estimation of stellar parameters with a non-normalized spectrum. Instead of normalizing the spectrum, a model spectrum is constructed
+that contains the instrumental response function approximated by a Chebyshev polynomial series. The parameters
+of the series are searched simultaneously with stellar parameters via optimization routine.
 
-Creating random grids: method 2
--------------------------------
-1. Edit 'random_grid.conf' file,
-2. Run 'random_grid_single_cell.py'.
+The repository contains modules that perform three different functions:
+1. Creating grids of model spectra to be used as training sets;
+2. Training neural networks based on grids of model spectra;
+3. Fitting models to spectra using trained neural networks.
 
-Method 2 samples a point in the parameter space randomly and runs GSSP to create a single-cell grid around this point. The model fluxes are then linearly interpolated for the sampled point. The process is repeated 'N_models_to_sample' (parameter in the config file) times.
+## Creating grids of model spectra
 
-Models in the random grid are saved into 'rnd_grid_out' folder as NPZ files. The name of a file is formed from a current timestamp. Each NPZ file contains a flux array and a dictionary with the stellar parameter values. GSSP input and output (including stderr) are saved into 'subgrid.inp' and 'subgrid.inp.log'.
+Run 'quasirandom_grid_single_cell.py' with no arguments. All the parameters are read out from 'random_grid.conf' file.
+The parameters define grid extent and step, wavelength grid, the number of models in the grid. The script creates a
+quasi-random grid based on a [Sobol sequence](https://en.wikipedia.org/wiki/Sobol_sequence). For each point in the
+quasi-random grid, the script creates a single-cell subgrid that contains this point, by running GSSP code. The model
+spectrum for the sampled point is then obtained by linearly interpolating models in the subgrid.
+
+## Training neural networks
+
+Assemble a grid into a single 'npz' file using 'assemble_grid.py' module and run 'train_NN.py' with it. The training algorithm 
+uses torch framework and requires a CUDA device. The neural network is saved into 'NN_\*.npz' file.
+
+## Fitting model spectra
+Use 'fit_HERMES.py' or 'fit_APOGEE.py' to fit model spectra. 
+
+'fit_APOGEE.py' takes as arguments a path to an APOGEE spectrum (apStar or apVisit) and a path to the neural network.
+
+'fit_HERMES.py' takes night and sequence id as arguments and reads a HERMES spectrum from /STER filesystem. 
+No need to normalize it. The path to the neural network is hardcoded at the moment.
+
