@@ -11,7 +11,7 @@ from fit_common import save_figure
 def fit_APOGEE(path, NN, Cheb_order):
 
     spec = rdspec(path)
-    print(spec.wave.shape, spec.flux.shape, spec.err.shape)
+    
     if len(spec.flux.shape)==2:
         wave_ = spec.wave.flatten()
         flux_ = spec.flux.flatten()
