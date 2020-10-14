@@ -4,22 +4,34 @@ from math import isnan
 import numpy as np
 from random_grid_common import *
 
-grid_fn = '_GRID.npz'
 
 if len(sys.argv) < 2:
-    print('Usage:', sys.argv[0], '<path to the folder with models>')
+    print('Usage:', sys.argv[0], '<path to the folder with models> [N models to assemble]')
     exit()
 
 path = sys.argv[1]
 
+N_limit = -1
+if len(sys.argv) > 2: N_limit = int(sys.argv[2])
+if N_limit <= 0:
+    print('Zero models to assemble, exiting.')
+    exit()
+
+grid_fn = '_GRID.npz'
+if N_limit > 0:
+    grid_fn = '_GRID_' + str(N_limit) + '.npz'
+
 files = [fn for fn in os.listdir(path) if fn.endswith('.npz')]
+files.sort()
 
 fluxes, params = [],[]
 
+N = 0
 for fn in files:
-    if fn == grid_fn: continue
+    N += 1
+    if N_limit > 0 and N > N_limit: break
     npz = np.load(os.path.join(path, fn))
-    flx = npz['flux'][:,0]
+    flx = npz['flux']
     flx_sum = sum(flx)
     if isnan(flx_sum):
         print('NANs in flux: excluded from grid')
