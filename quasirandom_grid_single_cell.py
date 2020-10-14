@@ -78,7 +78,7 @@ for i in range(N_models):
     
     print('-'*25)
     print('Sampled point:', pp)
-    print('Current subgrid:')
+    print('Current subgrid (' + str(i) + '):')
     subgrid = {}
     for p in param_names:
         if p in grid_params:
