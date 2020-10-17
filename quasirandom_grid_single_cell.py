@@ -12,6 +12,7 @@ from scipy.interpolate import interp1d
 opt = parse_inp()
 
 N_models = int(opt['N_models_to_sample'][0])
+N_models_skip = int(opt['N_models_to_skip'][0])
 wave = [float(x) for x in opt['wavelength']]
 GSSP_run_cmd = opt['GSSP_run_cmd'][0]
 
@@ -71,6 +72,7 @@ print()
 np.savetxt('theta.data', theta)
 
 for i in range(N_models):
+    if i < N_models_skip: continue
     pp_arr = theta[i,:]
     pp = {}
     for j,v in enumerate(grid_params):
