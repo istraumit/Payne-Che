@@ -101,7 +101,7 @@ for i in range(N_models):
 
     RND = RandomGrid(GRID)
 
-    prefix = '%.0f'%(time.time()*1.e6)
+    prefix = str(i).zfill(6)
     fn = prefix + '.npz'
     sp = RND.interpolate(pp_arr)
     np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
