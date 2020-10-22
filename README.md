@@ -36,3 +36,16 @@ Use 'fit_HERMES.py' or 'fit_APOGEE.py' to fit model spectra.
 'fit_HERMES.py' takes night and sequence id as arguments and reads a HERMES spectrum from /STER filesystem. 
 No need to normalize it. The path to the neural network is hardcoded at the moment.
 
+## Installation
+
+Payne-Che runs on Python 3. Just download or clone the repository.
+
+General package dependencies: **numpy**, **scipy**, **matplotlib**, **astropy**, **multiprocessing**.
+
+Creating grids of models (quasirandom_grid_single_cell.py) requires **shutil**, **subprocess** and [**sobol_seq**](https://github.com/naught101/sobol_seq).
+
+Training neural networks (train_NN.py) requires [**torch**](https://pytorch.org/).
+
+
+
+
