@@ -64,11 +64,12 @@ class Fit:
         def fit_func(dummy_variable, *labels):
             nn_spec = self.network.get_spectrum_scaled(scaled_labels = labels[:nnl])
             nn_spec = doppler_shift(self.network.wave, nn_spec, labels[-1])
+            nn_resampl = np.interp(wavelength, self.network.wave, nn_spec)
             Cheb_coefs = labels[nnl : nnl + self.Cheb_order]
-            Cheb_x = np.linspace(-1, 1, len(nn_spec))
+            Cheb_x = np.linspace(-1, 1, len(nn_resampl))
             Cheb_poly = chebval(Cheb_x, Cheb_coefs)
-            spec_with_resp = nn_spec * Cheb_poly
-            return np.interp(wavelength, self.network.wave, spec_with_resp)
+            spec_with_resp = nn_resampl * Cheb_poly
+            return spec_with_resp
 
         # if no initial guess is supplied, initialize with the median value
         if p0 is None:
