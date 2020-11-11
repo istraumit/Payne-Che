@@ -44,6 +44,27 @@ class Perceptron(torch.nn.Module):
     def forward(self, x):
         return self.features(x)
 
+class PerceptronSP(torch.nn.Module):
+    def __init__(self, dim_in, num_neurons, num_pixel):
+        super(PerceptronSP, self).__init__()
+
+        self.features = []
+        for i in range(num_pixel):
+            s = torch.nn.Sequential(
+            torch.nn.Linear(dim_in, num_neurons),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(num_neurons, num_neurons),
+            torch.nn.LeakyReLU(),
+            torch.nn.Linear(num_neurons, 1),)
+            self.features.append(s)
+
+    def forward(self, x):
+        y = torch.zeros(len(self.features))
+        for i,v in enumerate(self.features):
+            y[i] = v(x)
+        return y
+
+
 #---------------------------------------------------------------------------------------------------
 
 class NNTraining:
