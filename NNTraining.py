@@ -48,7 +48,7 @@ class PerceptronSP(torch.nn.Module):
     def __init__(self, dim_in, num_neurons, num_pixel):
         super(PerceptronSP, self).__init__()
 
-        self.features = []
+        self.features = torch.nn.ModuleList()
         for i in range(num_pixel):
             s = torch.nn.Sequential(
             torch.nn.Linear(dim_in, num_neurons),
