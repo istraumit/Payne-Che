@@ -59,10 +59,14 @@ class PerceptronSP(torch.nn.Module):
             self.features.append(s)
 
     def forward(self, x):
-        y = torch.zeros(len(self.features))
+        bs = x.shape[0]
+        y = torch.zeros(bs, len(self.features))
         for i,v in enumerate(self.features):
-            y[i] = v(x)
+            q = v(x)
+            for j in range(bs):
+                y[j,i] = q[j]
         return y
+
 
 
 #---------------------------------------------------------------------------------------------------
