@@ -121,7 +121,7 @@ class NNTraining:
     def train_on_npz(self, npz_path, validation_fraction=0.1):
         self.vf = validation_fraction
         data = np.load(npz_path)
-        spectra = data['flux']
+        spectra = data['flux'][:,:,0]
         labels  = data['labels']
         self.wave = data['wvl']
         print('spectra', spectra.shape)
@@ -163,7 +163,7 @@ class NNTraining:
         # assume L1 loss
         self.loss_fn = torch.nn.L1Loss(reduction = 'mean')
         # initiate Payne and optimizer
-        model = Perceptron(x.shape[1], self.num_neurons, training_spectra.shape[1])
+        model = PerceptronSP(x.shape[1], self.num_neurons, training_spectra.shape[1])
         if self.CUDA:
             model.cuda()
         model.train()
