@@ -63,7 +63,7 @@ def fit_APOGEE(path, NN, Cheb_order):
             print(v, ':', '%.2f'%popt[k], '+/-', '%.4f'%res.uncert[k], param_units[i])
             k += 1
 
-    print('RV:', '%.2f'%popt[-1], 'km/s')
+    print('RV:', '%.2f'%popt[len(param_names)], 'km/s')
     print('-'*25)
     
     name = os.path.basename(path)[:-5]

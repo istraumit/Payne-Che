@@ -63,9 +63,9 @@ class Fit:
 
         def fit_func(dummy_variable, *labels):
             nn_spec = self.network.get_spectrum_scaled(scaled_labels = labels[:nnl])
-            nn_spec = doppler_shift(self.network.wave, nn_spec, labels[-1])
+            nn_spec = doppler_shift(self.network.wave, nn_spec, labels[nnl])
             nn_resampl = np.interp(wavelength, self.network.wave, nn_spec)
-            Cheb_coefs = labels[nnl : nnl + self.Cheb_order]
+            Cheb_coefs = labels[nnl + 1 : nnl + 1 + self.Cheb_order]
             Cheb_x = np.linspace(-1, 1, len(nn_resampl))
             Cheb_poly = chebval(Cheb_x, Cheb_coefs)
             spec_with_resp = nn_resampl * Cheb_poly
@@ -79,10 +79,8 @@ class Fit:
         bounds = np.zeros((2,num_labels))
         bounds[0,:nnl] = -0.5
         bounds[1,:nnl] = 0.5
-        bounds[0, nnl : nnl + self.Cheb_order] = -np.inf
-        bounds[1, nnl : nnl + self.Cheb_order] = np.inf
-        bounds[0,-1] = -np.inf
-        bounds[1,-1] = np.inf
+        bounds[0, nnl:] = -np.inf
+        bounds[1, nnl:] = np.inf
 
         # run the optimizer
         popt, pcov = curve_fit(fit_func, xdata=[], ydata = norm_spec, sigma = spec_err, p0 = p0,
