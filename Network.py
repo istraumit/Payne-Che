@@ -26,7 +26,8 @@ class Network:
         self.x_max = tmp["x_max"]
         self.NN_coeffs = (w_array_0, w_array_1, w_array_2, b_array_0, b_array_1, b_array_2)
         self.wave = tmp["wave"]
-        self.grid = tmp["grid"].item()
+        if 'grid' in tmp:
+            self.grid = tmp["grid"].item()
         tmp.close()
 
     def num_labels(self):
