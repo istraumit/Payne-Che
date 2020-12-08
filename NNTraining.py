@@ -167,7 +167,7 @@ class NNTraining:
         # assume L1 loss
         self.loss_fn = torch.nn.L1Loss(reduction = 'mean')
         # initiate Payne and optimizer
-        model = PerceptronSP(x.shape[1], self.num_neurons, training_spectra.shape[1])
+        model = Perceptron(x.shape[1], self.num_neurons, training_spectra.shape[1])
         if self.CUDA:
             model.cuda()
         model.train()
