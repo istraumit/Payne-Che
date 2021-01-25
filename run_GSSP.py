@@ -46,7 +46,7 @@ def run_GSSP_once(string_list):
     return (chi2, chi2_sigma)
 
 
-def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
+def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, resolution='-1', Kurucz=True):
     """
     This routine runs GSSP in grid mode.
     ------------------------------------
@@ -78,7 +78,7 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
         f.write('skip 0.03 0.02 0.07\n')
         f.write(' '.join(['skip', metal[0], metal[2], metal[1]]) + '\n' )
         f.write('He 0.04 0.005 0.06\n')
-        f.write('0.0 1.0 0.0 85000\n')
+        f.write('0.0 1.0 0.0 '+resolution+'\n')
         f.write('/home/andrew/GSSP/abundances/\n')
         if Kurucz:
             f.write('/home/andrew/GSSP/Kurucz/\n')
@@ -108,18 +108,22 @@ def run_GSSP_grid(output_path, parameters, wave_range, GSSP_cmd, Kurucz=True):
 
 
 if __name__ == '__main__':
-    out_fn = 'grid_gen_test.inp'
-    p = {}
-    p['T_eff'] = [6000, 6000, 100]
-    p['log(g)'] = [4.0, 4.0, 0.1]
-    p['v*sin(i)'] = [50, 50, 10]
-    p['v_micro'] = [0, 2, 1]
-    p['[M/H]'] = [-0.1, 0.1, 0.1]
+    out_fn = 'simul_sp_Dec2020.inp'
+    with open('sim_list.data') as f:
+        for line in f:
+            row = line.split()
+            arr = [float(s) for s in row]
+            p = {}
+            p['T_eff'] = [arr[0], arr[0], 100]
+            p['log(g)'] = [arr[1], arr[1], 0.1]
+            p['v*sin(i)'] = [arr[2], arr[2], 10]
+            p['v_micro'] = [arr[3], arr[3], 1]
+            p['[M/H]'] = [arr[4], arr[4], 0.1]
     
-    wave_range = [4500, 5000, 1]
+            wave_range = [3500, 9500, 0.138]
 
-    run_GSSP_grid(out_fn, p, wave_range, '/home/ilyas/SDSS/GSSP/bin/GSSP')
-    
+            run_GSSP_grid(out_fn, p, wave_range, '/home/ilyas/SDSS/GSSP/bin/GSSP', Kurucz=False)
+            print(p)
 
 
 
