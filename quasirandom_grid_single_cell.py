@@ -83,14 +83,18 @@ for i in range(N_models):
     print('Current subgrid (' + str(i) + '):')
     subgrid = {}
     for p in param_names:
+        if len(GSSP_steps[p]) == 1:
+            step = GSSP_steps[p][0]
+        else:
+            step = GSSP_steps[p][1] if pp[p]<GSSP_steps[p][0] else GSSP_steps[p][2]
+            
         if p in grid_params:
-            step = grid[p][2]
             start = pp[p] - pp[p]%step
             subgrid[p] = [start, start + step, step]
         else:
-            subgrid[p] = grid[p]
+            subgrid[p] = grid[p] + [step]
         print(p, subgrid[p])
-    
+
     ok = run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd, opt['R'][0], Kurucz=Kurucz)
     if not ok:
         print('GSSP exited with error')
