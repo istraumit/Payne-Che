@@ -1,5 +1,6 @@
 # code for fitting spectra, using the models in spectral_model.py
 from __future__ import absolute_import, division, print_function # python2 compatibility
+import math
 import numpy as np
 from scipy.optimize import curve_fit
 from numpy.polynomial.chebyshev import chebval
@@ -20,6 +21,8 @@ def doppler_shift(wavelength, flux, dv):
     new_flux = np.interp(new_wavelength, wavelength, flux)
     return new_flux
 
+def gaussian(xx, mu, sigma):
+    return np.exp(-0.5*((xx-mu)/sigma)**2)/(sigma * math.sqrt(2*math.pi))
 
 class FitResult:
     pass
@@ -61,10 +64,24 @@ class Fit:
         nnl = self.network.num_labels()
         num_labels = nnl + self.Cheb_order + 1
 
+        if hasattr(self, 'psf'):
+            LAMOST_wave = self.psf[:,0]
+            LAMOST_R = self.psf[:,1]
+            delta_lambda_LAMOST = LAMOST_wave / LAMOST_R
+            delta_lambda = np.interp(wavelength, LAMOST_wave, delta_lambda_LAMOST)
+            G = [gaussian(self.network.wave, w, delta_lambda[i]) for i,w in enumerate(wavelength)]
+
         def fit_func(dummy_variable, *labels):
             nn_spec = self.network.get_spectrum_scaled(scaled_labels = labels[:nnl])
             nn_spec = doppler_shift(self.network.wave, nn_spec, labels[nnl])
-            nn_resampl = np.interp(wavelength, self.network.wave, nn_spec)
+            if hasattr(self, 'psf'):
+                nn_resampl = []
+                for i,w in enumerate(wavelength):
+                    integral = np.trapz(G[i] * nn_spec, self.network.wave)
+                    nn_resampl.append(integral)
+                nn_resampl = np.array(nn_resampl)
+            else:
+                nn_resampl = np.interp(wavelength, self.network.wave, nn_spec)
             Cheb_coefs = labels[nnl + 1 : nnl + 1 + self.Cheb_order]
             Cheb_x = np.linspace(-1, 1, len(nn_resampl))
             Cheb_poly = chebval(Cheb_x, Cheb_coefs)
@@ -110,7 +127,6 @@ class Fit:
             return chi2
         
         res.chi2_func = chi2_func
-        
         return res
 
 
