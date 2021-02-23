@@ -9,6 +9,9 @@ from Subgrid import *
 from random_grid_common import *
 import sobol_seq
 from scipy.interpolate import interp1d
+from multiprocessing import Process
+from multiprocessing.pool import Pool
+
 
 opt = parse_inp(sys.argv[1])
 
@@ -18,14 +21,17 @@ wave = [float(x) for x in opt['wavelength']]
 GSSP_run_cmd = opt['GSSP_run_cmd'][0]
 GSSP_data_path = opt['GSSP_data_path'][0]
 N_instances = int(opt['N_instances'][0])
+N_interpol_threads = int(opt['N_interpol_threads'][0])
 
 Kurucz = True
 if 'Kurucz' in opt:
     Kurucz = opt['Kurucz'][0].lower() in ['true', 'yes', '1']
 
 rnd_grid_dir = opt['output_dir'][0]
-if not os.path.exists(rnd_grid_dir):
-    os.makedirs(rnd_grid_dir)
+subgrid_dir = 'subgrids'
+for dn in [rnd_grid_dir, subgrid_dir]:
+    if not os.path.exists(dn):
+        os.makedirs(dn)
 
 grid = {}
 for o in opt:
@@ -74,6 +80,8 @@ print()
 
 np.savetxt('theta.data', theta)
 
+work = []
+
 for i in range(N_models):
     if i < N_models_skip: continue
     pp_arr = theta[i,:]
@@ -81,9 +89,6 @@ for i in range(N_models):
     for j,v in enumerate(grid_params):
         pp[v] = pp_arr[j]
     
-    print('-'*25)
-    print('Sampled point:', pp)
-    print('Current subgrid (' + str(i) + '):')
     subgrid = {}
     for p in param_names:
         if len(GSSP_steps[p]) == 1:
@@ -96,25 +101,64 @@ for i in range(N_models):
             subgrid[p] = [start, start + step, step]
         else:
             subgrid[p] = grid[p] + [step]
-        print(p, subgrid[p])
 
-    ok = run_GSSP_grid(0, 'subgrid.inp', subgrid, wave, GSSP_run_cmd, GSSP_data_path, opt['R'][0], Kurucz=Kurucz)
+    work_item = (str(i).zfill(6), subgrid, pp, pp_arr)
+    work.append(work_item)
+
+    
+
+def run_one_item(item):
+
+    (run_id, subgrid, pp, pp_arr) = item
+    inp_fn = os.path.join(subgrid_dir, 'subgrid_' + run_id + '.inp')
+
+    ok = run_GSSP_grid(run_id, inp_fn, subgrid, wave, GSSP_run_cmd, GSSP_data_path, opt['R'][0], Kurucz=Kurucz)
     if not ok:
-        print('GSSP exited with error')
-        exit()
+        print('GSSP exited with error, item id '+run_id)
+        return 1
 
-    GRID = Grid('rgs_files/0')
+    GRID = Grid(os.path.join('rgs_files', run_id))
     GRID.load()
 
     RND = RandomGrid(GRID)
 
-    prefix = str(i).zfill(6)
-    fn = prefix + '.npz'
-    sp = RND.interpolate(pp_arr)
+    fn = run_id + '.npz'
+    sp = RND.interpolate(pp_arr, N_interpol_threads)
     np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+    print('Grid model '+run_id+' complete')
+
+    return 0
 
 
+#----------------------------------------------
+# Avoiding nested Pools with daemonic processes
+# https://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
+# Thank you Chris Arndt
+class NonDaemonProcess(Process):
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+
+class CustomPool(Pool):
+    Process = NonDaemonProcess
+#----------------------------------------------
+
+
+with CustomPool(processes=N_instances) as pool:
+    ret = pool.map(run_one_item, work)
 
 
 print('Done.')
+
+
+
+
+
+
+
+
+
 

@@ -52,22 +52,21 @@ class RandomGrid:
             spectrum.append(v)
         return np.array(spectrum)
     
-    def interpolate_parallel(self, p):
+    def interpolate_parallel(self, p, N_threads):
         work = [(self.axes, C, p) for C in self.CUBES]
         
-        with Pool() as pool:
-            print('Running interpolation with', pool._processes, 'processes')
+        with Pool(processes=N_threads) as pool:
             spectrum = pool.map(interp_call, work)
             
         return np.array(spectrum)
     
-    def interpolate(self, p):
+    def interpolate(self, p, N_threads):
         if len(p)!=len(self.axes):
             raise Exception('Wrong number of dimensions for the point')
         for i,v in enumerate(p):
             if not (self.params_ranges[i][0] <= v <= self.params_ranges[i][1]):
                 raise Exception('Value %.2e on dimension %i is outside grid bounds'%(v, i))
-        return self.interpolate_parallel(p)
+        return self.interpolate_parallel(p, N_threads)
     
     def sample_model(self):
         p = self.sample_point_in_param_space()

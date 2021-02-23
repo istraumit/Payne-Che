@@ -53,7 +53,7 @@ def run_GSSP_grid(run_id, output_path, parameters, wave_range, GSSP_cmd, base_da
         f.write('0.5 0.99 5.9295 adjust\n')
         f.write(wave[0]+' '+wave[1]+'\n')
         
-    shutil.rmtree('rgs_files', ignore_errors=True)
+    shutil.rmtree(os.path.join('rgs_files', str(run_id)), ignore_errors=True)
     
     ok = True
     log_fn = output_path+'.log'
