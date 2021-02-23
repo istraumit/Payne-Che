@@ -4,9 +4,9 @@ DEBUG = True
 
 rnd_grid_dir = 'rnd_grid_out'
 
-def parse_inp():
+def parse_inp(fn='random_grid.conf'):
     opt = {}
-    with open('random_grid.conf') as f:
+    with open(fn) as f:
         for line in f:
             text = line[:line.find('#')]
             parts = text.split(':')

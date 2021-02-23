@@ -1,3 +1,4 @@
+import sys
 import os, time
 import numpy as np
 from Partition import *
@@ -9,12 +10,14 @@ from random_grid_common import *
 import sobol_seq
 from scipy.interpolate import interp1d
 
-opt = parse_inp()
+opt = parse_inp(sys.argv[1])
 
 N_models = int(opt['N_models_to_sample'][0])
 N_models_skip = int(opt['N_models_to_skip'][0])
 wave = [float(x) for x in opt['wavelength']]
 GSSP_run_cmd = opt['GSSP_run_cmd'][0]
+GSSP_data_path = opt['GSSP_data_path'][0]
+N_instances = int(opt['N_instances'][0])
 
 Kurucz = True
 if 'Kurucz' in opt:
@@ -95,12 +98,12 @@ for i in range(N_models):
             subgrid[p] = grid[p] + [step]
         print(p, subgrid[p])
 
-    ok = run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd, opt['R'][0], Kurucz=Kurucz)
+    ok = run_GSSP_grid(0, 'subgrid.inp', subgrid, wave, GSSP_run_cmd, GSSP_data_path, opt['R'][0], Kurucz=Kurucz)
     if not ok:
         print('GSSP exited with error')
         exit()
 
-    GRID = Grid('rgs_files')
+    GRID = Grid('rgs_files/0')
     GRID.load()
 
     RND = RandomGrid(GRID)
