@@ -22,6 +22,7 @@ GSSP_run_cmd = opt['GSSP_run_cmd'][0]
 GSSP_data_path = opt['GSSP_data_path'][0]
 N_instances = int(opt['N_instances'][0])
 N_interpol_threads = int(opt['N_interpol_threads'][0])
+scratch_dir = opt['scratch_dir'][0]
 
 Kurucz = True
 if 'Kurucz' in opt:
@@ -112,7 +113,7 @@ def run_one_item(item):
     (run_id, subgrid, pp, pp_arr) = item
     inp_fn = os.path.join(subgrid_dir, 'subgrid_' + run_id + '.inp')
 
-    ok = run_GSSP_grid(run_id, inp_fn, subgrid, wave, GSSP_run_cmd, GSSP_data_path, opt['R'][0], Kurucz=Kurucz)
+    ok = run_GSSP_grid(run_id, inp_fn, subgrid, wave, GSSP_run_cmd, GSSP_data_path, scratch_dir, opt['R'][0], Kurucz=Kurucz)
     if not ok:
         print('GSSP exited with error, item id '+run_id)
         return 1

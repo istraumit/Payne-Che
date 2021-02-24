@@ -2,7 +2,7 @@ import sys, shutil, os
 import subprocess as sp
 
 
-def run_GSSP_grid(run_id, output_path, parameters, wave_range, GSSP_cmd, base_data_path, resolution='-1', Kurucz=True):
+def run_GSSP_grid(run_id, output_path, parameters, wave_range, GSSP_cmd, base_data_path, scratch_dir, resolution='-1', Kurucz=True):
     """
     This routine runs GSSP in grid mode.
     ------------------------------------
@@ -32,6 +32,9 @@ def run_GSSP_grid(run_id, output_path, parameters, wave_range, GSSP_cmd, base_da
 
     with open(output_path, 'w') as f:
         f.write(str(run_id) + '\n')
+        f.write(scratch_dir)
+        if scratch_dir[-1]!='/': f.write('/')
+        f.write('\n')
         f.write(' '.join([Teff[0], Teff[2], Teff[1]]) + '\n' )
         f.write(' '.join([logg[0], logg[2], logg[1]]) + '\n' )
         f.write(' '.join([vmicro[0], vmicro[2], vmicro[1]]) + '\n' )
