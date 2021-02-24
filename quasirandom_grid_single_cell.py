@@ -149,7 +149,7 @@ class CustomPool(Pool):
 
 
 with CustomPool(processes=N_instances) as pool:
-    ret = pool.map(run_one_item, work)
+    ret = pool.map(run_one_item, work, chunksize=1)
 
 
 print('Done.')
