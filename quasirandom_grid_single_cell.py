@@ -1,4 +1,4 @@
-import sys
+import sys, shutil
 import os, time
 import numpy as np
 from Partition import *
@@ -118,7 +118,8 @@ def run_one_item(item):
         print('GSSP exited with error, item id '+run_id)
         return 1
 
-    GRID = Grid(os.path.join('rgs_files', run_id))
+    rgs_dir = os.path.join('rgs_files', run_id)
+    GRID = Grid(rgs_dir)
     GRID.load()
 
     RND = RandomGrid(GRID)
@@ -126,6 +127,8 @@ def run_one_item(item):
     fn = run_id + '.npz'
     sp = RND.interpolate(pp_arr, N_interpol_threads)
     np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+    shutil.rmtree(rgs_dir, ignore_errors=True)
+
     print('Grid model '+run_id+' complete')
 
     return 0
