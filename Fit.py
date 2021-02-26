@@ -5,6 +5,8 @@ import numpy as np
 from scipy.optimize import curve_fit
 from numpy.polynomial.chebyshev import chebval
 from Network import Network
+from scipy.ndimage import gaussian_filter1d
+
 
 def doppler_shift(wavelength, flux, dv):
     '''
@@ -64,12 +66,20 @@ class Fit:
         nnl = self.network.num_labels()
         num_labels = nnl + self.Cheb_order + 1
 
-        if hasattr(self, 'psf'):
+        if hasattr(self, 'psf'): # wavelength-dependent resolution function is specified
             LAMOST_wave = self.psf[:,0]
             LAMOST_R = self.psf[:,1]
             delta_lambda_LAMOST = LAMOST_wave / LAMOST_R
             delta_lambda = np.interp(wavelength, LAMOST_wave, delta_lambda_LAMOST)
             G = [gaussian(self.network.wave, w, delta_lambda[i]) for i,w in enumerate(wavelength)]
+        elif hasattr(self, 'psf_R'): # instrument resolution is specified
+            R = self.psf_R
+            center_lambda = 0.5 * (max(self.network.wave) + min(self.network.wave))
+            FWHM_factor = 2 * math.sqrt(2* math.log(2))
+            delta_lambda  = center_lambda / R
+            sigma = delta_lambda / FWHM_factor
+            pixel_width = (max(self.network.wave) - min(self.network.wave))/len(self.network.wave)
+            kernel_sigma = sigma / pixel_width
 
         def fit_func(dummy_variable, *labels):
             nn_spec = self.network.get_spectrum_scaled(scaled_labels = labels[:nnl])
@@ -80,6 +90,9 @@ class Fit:
                     integral = np.trapz(G[i] * nn_spec, self.network.wave)
                     nn_resampl.append(integral)
                 nn_resampl = np.array(nn_resampl)
+            elif hasattr(self, 'psf_R'):
+                nn_conv = gaussian_filter1d(nn_spec, kernel_sigma)
+                nn_resampl = np.interp(wavelength, self.network.wave, nn_conv)
             else:
                 nn_resampl = np.interp(wavelength, self.network.wave, nn_spec)
             Cheb_coefs = labels[nnl + 1 : nnl + 1 + self.Cheb_order]
@@ -92,12 +105,25 @@ class Fit:
         if p0 is None:
             p0 = np.zeros(num_labels)
 
+        x_min = self.network.x_min
+        x_max = self.network.x_max
+
         # prohibit the minimimizer to go outside the range of training set
         bounds = np.zeros((2,num_labels))
-        bounds[0,:nnl] = -0.5
-        bounds[1,:nnl] = 0.5
+        if not hasattr(self, 'bounds_unscaled'):
+            bounds[0,:nnl] = -0.5
+            bounds[1,:nnl] = 0.5
+        else:
+            for i in [0,1]:
+                bounds[i,:nnl] = (self.bounds_unscaled[i,:]-x_min)/(x_max-x_min) - 0.5
         bounds[0, nnl:] = -np.inf
         bounds[1, nnl:] = np.inf
+
+        # make sure the starting point is within bounds
+        for i in range(num_labels):
+            if not bounds[0,i]  < p0[i] < bounds[1,i]:
+                p0[i] = 0.5*(bounds[0,i] + bounds[1,i])
+
 
         # run the optimizer
         popt, pcov = curve_fit(fit_func, xdata=[], ydata = norm_spec, sigma = spec_err, p0 = p0,
@@ -109,8 +135,6 @@ class Fit:
         res.popt_scaled = np.copy(popt)
         res.pcov_scaled = np.copy(pcov)
 
-        x_min = self.network.x_min
-        x_max = self.network.x_max
         # rescale the result back to original unit
         popt[:nnl] = (popt[:nnl]+0.5)*(x_max-x_min) + x_min
         pcov[:nnl,:nnl] = pcov[:nnl,:nnl]*(x_max-x_min)
