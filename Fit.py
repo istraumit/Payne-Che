@@ -6,6 +6,7 @@ from scipy.optimize import curve_fit
 from numpy.polynomial.chebyshev import chebval
 from Network import Network
 from scipy.ndimage import gaussian_filter1d
+import sobol_seq
 
 
 def doppler_shift(wavelength, flux, dv):
@@ -36,6 +37,9 @@ class Fit:
         self.tol = tol # tolerance for when the optimizer should stop optimizing.
         self.network = network
         self.Cheb_order = Cheb_order
+        self.N_presearch_iter = 0
+        self.N_pre_search = 2000
+        self.RV_presearch_range = 100.0 # Search RV in [-50,50] km/s
 
     def run(self, wavelength, norm_spec, spec_err, mask=None, p0 = None):
         '''
@@ -124,6 +128,26 @@ class Fit:
             if not bounds[0,i]  < p0[i] < bounds[1,i]:
                 p0[i] = 0.5*(bounds[0,i] + bounds[1,i])
 
+        # pre-searching on sobol grid
+        for it in range(self.N_presearch_iter):
+            popt, pcov = curve_fit(fit_func, xdata=[], ydata = norm_spec, sigma = spec_err, p0 = p0,
+                        bounds = bounds, ftol = self.tol, xtol = self.tol, absolute_sigma = True, method = 'trf')
+
+            best = [np.inf, None]
+            N_sobol = sobol_seq.i4_sobol_generate(nnl+1, self.N_pre_search)
+            for i in range(self.N_pre_search):
+                lbl = np.copy(popt)
+                lbl[:nnl] = bounds[0,:nnl] + N_sobol[i,:nnl]*(bounds[1,:nnl] - bounds[0,:nnl])
+                lbl[nnl] = self.RV_presearch_range * (N_sobol[i,nnl] - 0.5) #RV
+
+                model = fit_func([], *lbl)
+                diff = (norm_spec - model) / spec_err
+                chi2 = np.sum(diff**2)
+                if chi2 < best[0]:
+                    best[0] = chi2
+                    best[1] = lbl
+
+            p0 = best[1]
 
         # run the optimizer
         popt, pcov = curve_fit(fit_func, xdata=[], ydata = norm_spec, sigma = spec_err, p0 = p0,
