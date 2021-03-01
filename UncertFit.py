@@ -144,7 +144,21 @@ class UncertFit:
         uncert = [get_param(pn) for pn in grid_params]
             
         res.uncert = uncert
-        res.RV_uncert = -1 # stub for testing
+
+        step = 0.01
+        i = len(grid_params)
+        xx = [popt[i]-step, popt[i], popt[i]+step]
+        yy = []
+        for x in xx:
+            pp = np.copy(popt)
+            pp[i] = x
+            yy.append(chi2_func(pp))
+        poly_coef = np.polyfit(xx, yy, 2)
+        poly_coef[-1] -= CHI2_C * yy[1]
+        roots = np.roots(poly_coef)
+        sigma = 0.5*abs(roots[0] - roots[1])
+        res.RV_uncert = sigma
+
         return res
 
     
