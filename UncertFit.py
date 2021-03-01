@@ -20,10 +20,25 @@ class UncertFit:
         self.fit = fit
         self.grid = fit.network.grid
         self.resol = spectral_resolution
-        self.N_range_points = 2
+        self.N_range_points = 1
+        self.RV_step = 0.01
 
     def run(self, wave, flux, flux_err):
         return self._run_3(wave, flux, flux_err)
+
+    def _get_RV_uncert(self, i, popt, CHI2_C, chi2_func):
+        step = self.RV_step
+        xx = [popt[i]-step, popt[i], popt[i]+step]
+        yy = []
+        for x in xx:
+            pp = np.copy(popt)
+            pp[i] = x
+            yy.append(chi2_func(pp))
+        poly_coef = np.polyfit(xx, yy, 2)
+        poly_coef[-1] -= CHI2_C * yy[1]
+        roots = np.roots(poly_coef)
+        sigma = 0.5*abs(roots[0] - roots[1])
+        return sigma
     
     def _run_3(self, wave, flux, flux_err, p0 = None):
 
@@ -145,19 +160,8 @@ class UncertFit:
             
         res.uncert = uncert
 
-        step = 0.01
         i = len(grid_params)
-        xx = [popt[i]-step, popt[i], popt[i]+step]
-        yy = []
-        for x in xx:
-            pp = np.copy(popt)
-            pp[i] = x
-            yy.append(chi2_func(pp))
-        poly_coef = np.polyfit(xx, yy, 2)
-        poly_coef[-1] -= CHI2_C * yy[1]
-        roots = np.roots(poly_coef)
-        sigma = 0.5*abs(roots[0] - roots[1])
-        res.RV_uncert = sigma
+        res.RV_uncert = self._get_RV_uncert(i, popt, CHI2_C, chi2_func)
 
         return res
 
@@ -166,7 +170,6 @@ class UncertFit:
         wave_start = min(wave)
         wave_end = max(wave)
         ndegree = 4 * self.resol * (wave_end - wave_start)/(wave_end + wave_start)
-        
         CHI2_C = 1.0 + math.sqrt(2.0 / ndegree)
         
         res = self.fit.run(wave, flux, flux_err)
@@ -194,18 +197,7 @@ class UncertFit:
                 i+=1
         res.uncert = uncert
 
-        step = 0.01
-        xx = [popt[i]-step, popt[i], popt[i]+step]
-        yy = []
-        for x in xx:
-            pp = np.copy(popt)
-            pp[i] = x
-            yy.append(chi2_func(pp))
-        poly_coef = np.polyfit(xx, yy, 2)
-        poly_coef[-1] -= CHI2_C * yy[1]
-        roots = np.roots(poly_coef)
-        sigma = 0.5*abs(roots[0] - roots[1])
-        res.RV_uncert = sigma
+        res.RV_uncert = self._get_RV_uncert(i, popt, CHI2_C, chi2_func)
         
         return res
         
