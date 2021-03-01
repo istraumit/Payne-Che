@@ -1,6 +1,15 @@
 import math
 import numpy as np
 from common import *
+from multiprocessing import Pool
+
+chi2_func = None
+
+def _run_3_work_unit(opt):
+    (c, pp) = opt
+    for i,v in enumerate(c): pp[i] = v
+    c.append(chi2_func(pp))
+    return c
 
 class UncertFit:
     """
@@ -11,7 +20,7 @@ class UncertFit:
         self.fit = fit
         self.grid = fit.network.grid
         self.resol = spectral_resolution
-        self.N_range_points = 1
+        self.N_range_points = 2
 
     def run(self, wave, flux, flux_err):
         return self._run_3(wave, flux, flux_err)
@@ -87,6 +96,7 @@ class UncertFit:
             return [ll+[v] for ll in list_of_lists for v in just_list]
 
 
+        global chi2_func
         wave_start = min(wave)
         wave_end = max(wave)
         ndegree = 4 * self.resol * (wave_end - wave_start)/(wave_end + wave_start)
@@ -125,12 +135,10 @@ class UncertFit:
             if i==0: continue
             new_params = list_tensor_product(new_params, ranges[i])
 
-        Chi2 = []
-        for c in new_params:
-            pp = np.copy(popt)
-            for i,v in enumerate(c): pp[i] = v
-            c.append(chi2_func(pp))
-            Chi2.append(c)
+        work = [(c, np.copy(popt)) for c in new_params]
+
+        with Pool() as pool:
+            Chi2 = pool.map(_run_3_work_unit, work)
 
         Chi2_table = np.array(Chi2)
         uncert = [get_param(pn) for pn in grid_params]
@@ -171,7 +179,7 @@ class UncertFit:
                 uncert.append(sigma)
                 i+=1
         res.uncert = uncert
-        
+
         step = 0.01
         xx = [popt[i]-step, popt[i], popt[i]+step]
         yy = []
