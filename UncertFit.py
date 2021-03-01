@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from common import param_names, param_units
+from common import *
 
 class UncertFit:
     """
@@ -11,6 +11,7 @@ class UncertFit:
         self.fit = fit
         self.grid = fit.network.grid
         self.resol = spectral_resolution
+        self.N_range_points = 1
 
     def run(self, wave, flux, flux_err):
         return self._run_3(wave, flux, flux_err)
@@ -62,7 +63,7 @@ class UncertFit:
         def get_param(param):
             data = Chi2_table
             chi2 = data[:,-1] 
-            i = param_names.index(param) 
+            i = grid_params.index(param)
 
             #plt.figure()
             par, ch = extract_smallest(data[:,i], chi2-CHI2_C*min(chi2))
@@ -81,6 +82,11 @@ class UncertFit:
 
             return sigma
 
+
+        def list_tensor_product(list_of_lists, just_list):
+            return [ll+[v] for ll in list_of_lists for v in just_list]
+
+
         wave_start = min(wave)
         wave_end = max(wave)
         ndegree = 4 * self.resol * (wave_end - wave_start)/(wave_end + wave_start)
@@ -89,22 +95,48 @@ class UncertFit:
         res = self.fit.run(wave, flux, flux_err, p0=p0)
         popt, pcov, model_spec, chi2_func = res.popt, res.pcov, res.model, res.chi2_func
 
-        ranges = [[popt[param_names.index(pn)]-self.grid[pn][2], popt[param_names.index(pn)], popt[param_names.index(pn)]+self.grid[pn][2]] for pn in param_names]
+        grid_params = []
+        for pn in param_names:
+            if self.grid[pn][0]!=self.grid[pn][1]: # excluding collapsed dimensions
+                grid_params.append(pn)
+
+        assert len(grid_params)>0
+
+        steps = {}
+        for pn in grid_params:
+            if len(GSSP_steps[pn]) == 1:
+                step = GSSP_steps[pn][0]
+            else:
+                step = GSSP_steps[pn][1]
+            steps[pn] = step
+
+        N_pts = self.N_range_points # number of points in each range N = N_pts*2 + 1
+        ranges = []
+        for i,pn in enumerate(grid_params):
+            rr = []
+            K = -N_pts
+            while(K<=N_pts):
+                rr.append(popt[i] + K*steps[pn])
+                K += 1
+            ranges.append(rr)
+
+        new_params = [[x] for x in ranges[0]]
+        for i,pn in enumerate(grid_params):
+            if i==0: continue
+            new_params = list_tensor_product(new_params, ranges[i])
 
         Chi2 = []
-        new_params = [[i,j,k,l,m] for i in ranges[0] for j in ranges[1] for k in ranges[2] for l in ranges[3] for m in ranges[4]]
         for c in new_params:
             pp = np.copy(popt)
-            pp[:5] = c
+            for i,v in enumerate(c): pp[i] = v
             c.append(chi2_func(pp))
             Chi2.append(c)
 
         Chi2_table = np.array(Chi2)
-        uncert = []
-        for pn in param_names:
-            uncert.append(get_param(pn))
+        uncert = [get_param(pn) for pn in grid_params]
             
         res.uncert = uncert
+        res.RV_uncert = -1 # stub for testing
         return res
 
     
@@ -122,7 +154,10 @@ class UncertFit:
         i=0
         for pn in param_names:
             if self.grid[pn][0]!=self.grid[pn][1]:
-                step = self.grid[pn][2]
+                if len(GSSP_steps[pn]) == 1:
+                    step = GSSP_steps[pn][0]
+                else:
+                    step = GSSP_steps[pn][1]
                 xx = [popt[i]-step, popt[i], popt[i]+step]
                 yy = []
                 for x in xx:
@@ -136,6 +171,20 @@ class UncertFit:
                 uncert.append(sigma)
                 i+=1
         res.uncert = uncert
+        
+        step = 0.01
+        xx = [popt[i]-step, popt[i], popt[i]+step]
+        yy = []
+        for x in xx:
+            pp = np.copy(popt)
+            pp[i] = x
+            yy.append(chi2_func(pp))
+        poly_coef = np.polyfit(xx, yy, 2)
+        poly_coef[-1] -= CHI2_C * yy[1]
+        roots = np.roots(poly_coef)
+        sigma = 0.5*abs(roots[0] - roots[1])
+        res.RV_uncert = sigma
+        
         return res
         
     
