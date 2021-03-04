@@ -7,23 +7,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from common import param_names, param_units
 from fit_common import save_figure
+from multiprocessing import Pool, Lock
+
+
+lock = Lock()
 
 def fit_APOGEE(path, NN, Cheb_order):
 
     spec = rdspec(path)
+
+    wave_ = spec.wave
     
     if len(spec.flux.shape)==2:
-        wave_ = spec.wave.flatten()
-        flux_ = spec.flux.flatten()
-        err_ = spec.err.flatten()
+        flux_ = spec.flux[0,:]
+        err_ = spec.err[0,:]
     else:
-        wave_ = spec.wave
         flux_ = spec.flux
         err_ = spec.err
-
-    wave_ = wave_[::-1]
-    flux_ = flux_[::-1]
-    err_  = err_[::-1]
 
     wave, flux, err = [],[],[]
     for i,v in enumerate(flux_):
@@ -37,57 +37,59 @@ def fit_APOGEE(path, NN, Cheb_order):
     err /= flux_mean
 
     fit = Fit(NN, Cheb_order)
+    fit.N_presearch_iter = 1
+    fit.N_pre_search = 4000
     unc_fit = UncertFit(fit, 22500)
-    res = unc_fit.run(wave, flux, err)
-    
-    popt, pcov, model_spec, chi2_func = res.popt, res.pcov, res.model, res.chi2_func
-    
-    CHI2 = chi2_func(popt)
-    print('-'*25)
-    print('Chi^2:', '%.2e'%CHI2)
+    fit_res = unc_fit.run(wave, flux, err)
 
-    if not os.path.exists('FIT'):
-        os.makedirs('FIT')
-
-    with open('FIT/LOG', 'a') as flog:
-        L = [path, '%.2e'%CHI2]
-        L.extend( [str(x) for x in popt] )
-        s = ' '.join(L)
-        flog.write(s+'\n')
-
-    print('-'*25)
-
+    objid = spec.head['OBJID']
+    row = [objid]
     k = 0
     for i,v in enumerate(param_names):
         if NN.grid[v][0]!=NN.grid[v][1]:
-            print(v, ':', '%.2f'%popt[k], '+/-', '%.4f'%res.uncert[k], param_units[i])
+            row.append('%.2f'%fit_res.popt[k])
+            row.append('%.4f'%fit_res.uncert[k])
             k += 1
+    row.append('%.2f'%fit_res.popt[k])
+    row.append('%.2f'%fit_res.RV_uncert)
+    txt = ' '.join(row)
 
-    print('RV:', '%.2f'%popt[len(param_names)], 'km/s')
-    print('-'*25)
-    
-    name = os.path.basename(path)[:-5]
-    plt.title(name)
-    plt.plot(wave, flux, label='Data')
-    plt.plot(wave, model_spec, label='Model')
-    plt.legend()
-    plt.xlabel('Wavelength [A]')
-    plt.ylabel('Flux')
-    save_figure('FIT/'+name+'.png')
+    lock.acquire()
+    with open('LOG_APOGEE', 'a') as f:
+        f.write(txt)
+        f.write('\n')
+    print(txt)
+    lock.release()
+
+    fit_res.wave = wave
+    fit_res.model *= flux_mean
+    return fit_res
 
 
 if __name__=='__main__':
-    if len(sys.argv)<3:
-        print('Use:', sys.argv[0], '<path_to_spectrum> <path_to_NN>')
+    if len(sys.argv)<2:
+        print('Use:', sys.argv[0], '<path to spectrum or folder with spectra>')
         exit()
 
-    fn = sys.argv[1]
+    input_path = sys.argv[1]
 
-    NN_path = sys.argv[2]
+    NN_path = '/home/elwood/Documents/SDSS/NN/APOGEE/G4500_NN_n400_b1000_v0.1.npz'
     NN = Network()
     NN.read_in(NN_path)
 
-    fit_APOGEE(fn, NN, 10)
+    def process_file(fn):
+        path = os.path.join(input_path, fn)
+        res = fit_APOGEE(path, NN, 10)
+        M = np.vstack([res.wave, res.model])
+        np.save(path + '.mod', M)
+        return 1
+
+    if os.path.isdir(input_path):
+        files = [fn for fn in os.listdir(input_path) if fn.endswith('.fits')]
+        with Pool() as pool:
+            pool.map(process_file, files)
+    else:
+        process_file(input_path)
 
 
 
