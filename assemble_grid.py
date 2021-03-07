@@ -45,7 +45,8 @@ for fn in files:
     params.append(pp)
     print(fn)
 
-opt = parse_inp()
+opt_path = os.path.join(path, '_grid.conf')
+opt = parse_inp(opt_path)
 wave = [float(x) for x in opt['wavelength']]
 wave_grid = np.linspace(wave[0], wave[1], len(fluxes[0]))
 
