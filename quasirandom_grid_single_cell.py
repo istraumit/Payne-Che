@@ -1,4 +1,4 @@
-import sys
+import sys, shutil
 import os, time
 import numpy as np
 from Partition import *
@@ -22,6 +22,7 @@ GSSP_run_cmd = opt['GSSP_run_cmd'][0]
 GSSP_data_path = opt['GSSP_data_path'][0]
 N_instances = int(opt['N_instances'][0])
 N_interpol_threads = int(opt['N_interpol_threads'][0])
+scratch_dir = opt['scratch_dir'][0]
 
 Kurucz = True
 if 'Kurucz' in opt:
@@ -112,12 +113,13 @@ def run_one_item(item):
     (run_id, subgrid, pp, pp_arr) = item
     inp_fn = os.path.join(subgrid_dir, 'subgrid_' + run_id + '.inp')
 
-    ok = run_GSSP_grid(run_id, inp_fn, subgrid, wave, GSSP_run_cmd, GSSP_data_path, opt['R'][0], Kurucz=Kurucz)
+    ok = run_GSSP_grid(run_id, inp_fn, subgrid, wave, GSSP_run_cmd, GSSP_data_path, scratch_dir, opt['R'][0], Kurucz=Kurucz)
     if not ok:
         print('GSSP exited with error, item id '+run_id)
         return 1
 
-    GRID = Grid(os.path.join('rgs_files', run_id))
+    rgs_dir = os.path.join('rgs_files', run_id)
+    GRID = Grid(rgs_dir)
     GRID.load()
 
     RND = RandomGrid(GRID)
@@ -125,6 +127,8 @@ def run_one_item(item):
     fn = run_id + '.npz'
     sp = RND.interpolate(pp_arr, N_interpol_threads)
     np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+    shutil.rmtree(rgs_dir, ignore_errors=True)
+
     print('Grid model '+run_id+' complete')
 
     return 0
@@ -148,7 +152,7 @@ class CustomPool(Pool):
 
 
 with CustomPool(processes=N_instances) as pool:
-    ret = pool.map(run_one_item, work)
+    ret = pool.map(run_one_item, work, chunksize=1)
 
 
 print('Done.')
