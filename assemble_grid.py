@@ -30,7 +30,7 @@ N = 0
 for fn in files:
     N += 1
     if N_limit > 0 and N > N_limit: break
-    npz = np.load(os.path.join(path, fn))
+    npz = np.load(os.path.join(path, fn), allow_pickle=True)
     flx = npz['flux']
     flx_sum = sum(flx)
     if isnan(flx_sum):
