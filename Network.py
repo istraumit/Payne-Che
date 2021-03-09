@@ -15,7 +15,7 @@ class Network:
         can train your own networks and edit this function to read them in.
         '''
 
-        tmp = np.load(npz_path)
+        tmp = np.load(npz_path, allow_pickle=True)
         w_array_0 = tmp["w_array_0"]
         w_array_1 = tmp["w_array_1"]
         w_array_2 = tmp["w_array_2"]
