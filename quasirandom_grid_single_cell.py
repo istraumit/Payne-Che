@@ -11,9 +11,10 @@ import sobol_seq
 from scipy.interpolate import interp1d
 from multiprocessing import Process
 from multiprocessing.pool import Pool
+from shutil import copyfile
 
-
-opt = parse_inp(sys.argv[1])
+opt_fn = sys.argv[1]
+opt = parse_inp(opt_fn)
 
 N_models = int(opt['N_models_to_sample'][0])
 N_models_skip = int(opt['N_models_to_skip'][0])
@@ -33,6 +34,8 @@ subgrid_dir = 'subgrids'
 for dn in [rnd_grid_dir, subgrid_dir]:
     if not os.path.exists(dn):
         os.makedirs(dn)
+
+copyfile(opt_fn, os.path.join(rnd_grid_dir, '_grid.conf'))
 
 grid = {}
 for o in opt:
