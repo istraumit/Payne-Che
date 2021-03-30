@@ -3,16 +3,22 @@ import numpy as np
 from bisect import bisect
 from DER_SNR import DER_SNR
 from Network import Network
-from common import param_names, param_units
+from common import param_names, param_units, parse_inp
 from Fit import Fit
 from fit_common import save_figure
 from UncertFit import UncertFit
 from random_grid_common import parse_inp
 from multiprocessing import Pool, Lock
+from FitLogger import FitLogger
+import matplotlib.pyplot as plt
 
 lock = Lock()
 
-def fit_BOSS(path, NN, wave_start, wave_end, Cheb_order, constraints={}):
+def fit_BOSS(path, NN, opt, logger, constraints={}):
+
+    wave_start = float(opt['wave_range'][0])
+    wave_end = float(opt['wave_range'][1])
+    Cheb_order = int(opt['N_chebyshev'][0])
 
     data = np.loadtxt(path)
     wave = data[:,0]
@@ -39,16 +45,16 @@ def fit_BOSS(path, NN, wave_start, wave_end, Cheb_order, constraints={}):
 
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
-    #fit.psf_R = 22500
-    #fit.psf = np.loadtxt('LAMOST_resolution.txt', skiprows=5)
-    fit.N_presearch_iter = 2
-    fit.N_pre_search = 2000
-    unc_fit = UncertFit(fit, 22500)
+    R = int(opt['spectral_R'][0])
+    fit.psf_R = R
+    fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
+    fit.N_pre_search = int(opt['N_presearch'][0])
+    unc_fit = UncertFit(fit, R)
     fit_res = unc_fit.run(wave, flux, err)
     CHI2 = fit_res.chi2_func(fit_res.popt)
 
     name = os.path.basename(path)
-    row = [name[:-4].split('_')[-1]]
+    row = [name]
     k = 0
     for i,v in enumerate(param_names):
         if NN.grid[v][0]!=NN.grid[v][1]:
@@ -59,44 +65,57 @@ def fit_BOSS(path, NN, wave_start, wave_end, Cheb_order, constraints={}):
     row.append('%.2f'%fit_res.RV_uncert)
     txt = ' '.join(row)
 
-    lock.acquire()
-    with open('LOG_BOSS', 'a') as f:
-        f.write(txt)
-        f.write('\n')
-    print(txt)
-    lock.release()
-
     fit_res.wave = wave
     fit_res.model *= f_mean
+
+    logger.save_plot(wave, flux*f_mean, fit_res.model, name)
+    logger.add_record(txt)
+    print(txt)
+
     return fit_res
 
 
 
 if __name__=='__main__':
-    path = sys.argv[1]
+    if len(sys.argv)<3:
+        print('Use:', sys.argv[0], '<config file> <path to the data>')
+        exit()
 
-    #NN_path = '/STER/ilyas/NN/BOSS/BOSS_NN_G6500_n300_b1000_v0.1.npz'
-    NN_path = '/home/elwood/Documents/SDSS/NN/APOGEE/G4500_NN_n400_b1000_v0.1.npz'
+    opt = parse_inp(sys.argv[1])
+    path = sys.argv[2]
+
+    #fit.psf = np.loadtxt('LAMOST_resolution.txt', skiprows=5)
+    NN_path = opt['NN_path'][0]
     NN = Network()
     NN.read_in(NN_path)
 
     constr = {}
     #constr['[M/H]'] = (0.2-0.01, 0.2+0.01)
-
-    files = [fn for fn in os.listdir(path) if fn.endswith('.txt')]
     
+    logger = FitLogger(opt['log_dir'][0], delete_old=True)
+
     def process(fn):
         path_fn = os.path.join(path, fn)
-        res = fit_BOSS(path_fn, NN, 15000, 17000, 10, constraints=constr)
-        M = np.vstack([res.wave, res.model])
-        np.save(path_fn + '.mod', M)
+        res = fit_BOSS(path_fn, NN, opt, logger)
+        #M = np.vstack([res.wave, res.model])
+        #np.save(path_fn + '.mod', M)
 
-    #for fn in files: process(fn)
 
-    #exit()
+    if os.path.isfile(path):
+        process(path)
+    elif os.path.isdir(path):
+        files = [fn for fn in os.listdir(path)]
+        files.sort()
+        parallel = opt['parallel'][0].lower() in ['true', 'yes', '1']
+        if parallel:
+            print('Parallel processing option is ON')
+            with Pool() as pool:
+                pool.map(process, files)
+        else:
+            for fn in files: process(fn)
+    else:
+        print('Path "'+path+'" is neither file nor directory.')
 
-    with Pool() as pool:
-        pool.map(process, files)
 
 
 
