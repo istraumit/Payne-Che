@@ -45,8 +45,16 @@ def fit_BOSS(path, NN, opt, logger, constraints={}):
 
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
-    R = int(opt['spectral_R'][0])
-    fit.psf_R = R
+
+    if 'psf_function' in opt:
+        fit.psf = np.loadtxt(opt['psf_function'][0])
+        R = np.mean(fit.psf)
+    elif 'spectral_R' in opt:
+        R = float(opt['spectral_R'][0])
+        fit.psf_R = R
+    else:
+        raise Exception('Please specify either constant (spectral_R:<float>) or wavelength-dependent (psf_function:<path to the file>) resolution in the .conf file')
+
     fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
     fit.N_pre_search = int(opt['N_presearch'][0])
     unc_fit = UncertFit(fit, R)
@@ -84,7 +92,6 @@ if __name__=='__main__':
     opt = parse_inp(sys.argv[1])
     path = sys.argv[2]
 
-    #fit.psf = np.loadtxt('LAMOST_resolution.txt', skiprows=5)
     NN_path = opt['NN_path'][0]
     NN = Network()
     NN.read_in(NN_path)
@@ -97,9 +104,6 @@ if __name__=='__main__':
     def process(fn):
         path_fn = os.path.join(path, fn)
         res = fit_BOSS(path_fn, NN, opt, logger)
-        #M = np.vstack([res.wave, res.model])
-        #np.save(path_fn + '.mod', M)
-
 
     if os.path.isfile(path):
         process(path)

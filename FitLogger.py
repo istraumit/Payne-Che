@@ -22,7 +22,7 @@ def multiplot(wave, flux, model, N, xlbl, ylbl):
 class FitLogger:
 
     def __init__(self, log_dir, delete_old=False):
-        if delete_old: shutil.rmtree(log_dir)
+        if delete_old: shutil.rmtree(log_dir, ignore_errors=True)
         os.makedirs(log_dir, exist_ok=True)
         self.log_dir = log_dir
         self.log_file_name = 'LOG'
