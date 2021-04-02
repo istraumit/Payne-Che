@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function # python2 compa
 import math
 import numpy as np
 from scipy.optimize import curve_fit
+from bisect import bisect
 from numpy.polynomial.chebyshev import chebval
 from Network import Network
 from scipy.ndimage import gaussian_filter1d
@@ -29,6 +30,24 @@ def gaussian(xx, mu, sigma):
 
 class FitResult:
     pass
+
+class GaussKernel:
+
+    def __init__(self, wave, w0, sigma):
+        Q = 5.0
+        w_start = w0 - Q*sigma
+        w_end = w0 + Q*sigma
+        i_start = bisect(wave, w_start)
+        i_end = bisect(wave, w_end)
+
+        wave_slice = wave[i_start:i_end]
+        self.i_start = i_start
+        self.i_end = i_end
+        self.wave = wave_slice
+        self.kernel = gaussian(wave_slice, w0, sigma)
+
+    def integrate(self, flux):
+        return np.trapz(self.kernel * flux[self.i_start:self.i_end], self.wave)
 
 
 class Fit:
@@ -70,16 +89,16 @@ class Fit:
         nnl = self.network.num_labels()
         num_labels = nnl + self.Cheb_order + 1
 
+        FWHM_factor = 2 * math.sqrt(2* math.log(2))
         if hasattr(self, 'psf'): # wavelength-dependent resolution function is specified
             LAMOST_wave = self.psf[:,0]
             LAMOST_R = self.psf[:,1]
             delta_lambda_LAMOST = LAMOST_wave / LAMOST_R
             delta_lambda = np.interp(wavelength, LAMOST_wave, delta_lambda_LAMOST)
-            G = [gaussian(self.network.wave, w, delta_lambda[i]) for i,w in enumerate(wavelength)]
+            G = [ GaussKernel(self.network.wave, w, delta_lambda[i] / FWHM_factor) for i,w in enumerate(wavelength)]
         elif hasattr(self, 'psf_R'): # instrument resolution is specified
             R = self.psf_R
             center_lambda = 0.5 * (max(self.network.wave) + min(self.network.wave))
-            FWHM_factor = 2 * math.sqrt(2* math.log(2))
             delta_lambda  = center_lambda / R
             sigma = delta_lambda / FWHM_factor
             pixel_width = (max(self.network.wave) - min(self.network.wave))/len(self.network.wave)
@@ -89,10 +108,7 @@ class Fit:
             nn_spec = self.network.get_spectrum_scaled(scaled_labels = labels[:nnl])
             nn_spec = doppler_shift(self.network.wave, nn_spec, labels[nnl])
             if hasattr(self, 'psf'):
-                nn_resampl = []
-                for i,w in enumerate(wavelength):
-                    integral = np.trapz(G[i] * nn_spec, self.network.wave)
-                    nn_resampl.append(integral)
+                nn_resampl = [G[i].integrate(nn_spec) for i,w in enumerate(wavelength)]
                 nn_resampl = np.array(nn_resampl)
             elif hasattr(self, 'psf_R'):
                 nn_conv = gaussian_filter1d(nn_spec, kernel_sigma)
