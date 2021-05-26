@@ -7,13 +7,19 @@ from RandomGrid import *
 from Subgrid import *
 from random_grid_common import *
 from time import time
+from CustomPool import CustomPool
+
 
 def sample_point(grid):
     pp = {}
     for p in param_names:
-        x = np.random.rand()
-        q = grid[p]
-        v = q[0] + x * (q[1] - q[0])
+        if grid[p][0] == grid[p][1]: continue
+        if len(grid[p])==2:
+            v = grid[p][0] + np.random.rand() * (grid[p][1] - grid[p][0])
+        else:
+            v = grid[p][2] + np.random.randn() * grid[p][3]
+            if v < grid[p][2]:
+                v = grid[p][2] + (grid[p][2] - v)
         pp[p] = v
     return pp
     
@@ -21,65 +27,44 @@ def printt(*arg):
     t = '%.2f'%time()
     print(t, *arg)    
 
-opt = parse_inp()
+opt_fn = sys.argv[1]
+opt = parse_inp(opt_fn)
 
 N_models = int(opt['N_models_to_sample'][0])
-wave = [float(x) for x in opt['wavelength']]
-GSSP_run_cmd = opt['GSSP_run_cmd'][0]
+N_oversample = int(opt['N_oversample'][0])
+N_instances = int(opt['N_instances'][0])
 
 rnd_grid_dir = opt['output_dir'][0]
-if not os.path.exists(rnd_grid_dir):
-    os.makedirs(rnd_grid_dir)
+subgrid_dir = 'subgrids'
+for dn in [rnd_grid_dir, subgrid_dir]:
+    if not os.path.exists(dn):
+        os.makedirs(dn)
+
+copyfile(opt_fn, os.path.join(rnd_grid_dir, '_grid.conf'))
 
 grid = {}
 for o in opt:
     if o in param_names:
         grid[o] = [float(x) for x in opt[o]]
 
-for i in range(N_models):
+grid_params = [p for p in param_names if grid[p][0]!=grid[p][1]]
+
+work = []
+for i in range(N_oversample):
     pp = sample_point(grid)
-    pp_list = []
-    for p in param_names:
-        if grid[p][0]==grid[p][1]: continue
-        pp_list.append(pp[p])
-    
-    print('-'*25)
-    print('Sampled point:', pp)
-    print('Current subgrid:')
-    subgrid = {}
-    for p in param_names:
-        if grid[p][0]==grid[p][1]:
-            subgrid[p] = [grid[p][0], grid[p][0], 1.0]
-        else:
-            step = grid[p][2]
-            start = pp[p] - pp[p]%step
-            subgrid[p] = [start, start + step, step]
-        print(p, subgrid[p])
-
-    printt('Running GSSP')    
-    run_GSSP_grid('subgrid.inp', subgrid, wave, GSSP_run_cmd)
-
-    printt('Loading grid')
-    GRID = Grid('rgs_files')
-    GRID.load()
-
-    printt('Creating random grid')
-    RND = RandomGrid(GRID)
-
-    printt('Interpolating')
-    prefix = '%.0f'%(time()*1.e6)
-    fn = prefix + '.npz'
-    sp = RND.interpolate(np.array(pp_list))
-    printt('Saving npz')
-    np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+    pp_arr = []
+    for j,v in enumerate(grid_params):
+        pp_arr.append(pp[v])
+    subgrid = create_subgrid(pp, grid)
+    work_item = (str(N_models + i).zfill(6), subgrid, pp, pp_arr, subgrid_dir, opt)
+    work.append(work_item)
 
 
+with CustomPool(processes=N_instances) as pool:
+    ret = pool.map(run_one_item, work, chunksize=1)
 
 
 print('Done.')
-
-
-
 
 
 
