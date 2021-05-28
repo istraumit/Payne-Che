@@ -12,6 +12,7 @@ from multiprocessing import Pool, Lock
 from FitLogger import FitLogger
 import matplotlib.pyplot as plt
 from SpectrumLoader import SpectrumLoader
+from LSF import *
 
 lock = Lock()
 
@@ -23,6 +24,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
 
     wave = spectrum.wave
     flux = spectrum.flux
+    err = spectrum.err
 
     start_idx = bisect(wave, wave_start)
     end_idx = bisect(wave, wave_end)
@@ -31,10 +33,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     SNR = DER_SNR(flux)
     f_mean = np.mean(flux)
     flux /= f_mean
-    if hasattr(spectrum, 'err'):
-        err = spectrum.err
-    else:
-        err = flux / SNR
+    err /= f_mean
 
     grid_params = [p for p in param_names if NN.grid[p][0]!=NN.grid[p][1]]
     bounds_unscaled = np.zeros((2, len(grid_params)))
@@ -49,6 +48,8 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
 
+    fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
+
     if 'psf_function' in opt:
         fit.psf = np.loadtxt(opt['psf_function'][0])
         R = np.mean(fit.psf)
@@ -58,7 +59,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
 
     fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
     fit.N_pre_search = int(opt['N_presearch'][0])
-    unc_fit = UncertFit(fit, 22500)
+    unc_fit = UncertFit(fit, float(opt['spectral_R'][0]))
     fit_res = unc_fit.run(wave, flux, err)
     CHI2 = fit_res.chi2_func(fit_res.popt)
 

@@ -2,6 +2,7 @@ import sys,os
 import numpy as np
 from astropy.io import fits
 from SDSS import rdspec, Spec1D
+from DER_SNR import DER_SNR
 
 
 class SpectrumData:
@@ -76,10 +77,14 @@ def load_ASCII(path):
     data = np.loadtxt(path)
     wave = data[:,0]
     flux = data[:,1]
-    err = None
     if data.shape[1]>2:
         err = data[:,2]
-    return SpectrumData(wave, flux, err)
+    else:
+        SNR = DER_SNR(flux)
+        err = flux/SNR
+    sd = SpectrumData(wave, flux, err)
+    sd.obj_id = os.path.basename(path)
+    return sd
 
 
 

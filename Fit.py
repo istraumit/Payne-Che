@@ -89,30 +89,12 @@ class Fit:
         nnl = self.network.num_labels()
         num_labels = nnl + self.Cheb_order + 1
 
-        FWHM_factor = 2 * math.sqrt(2* math.log(2))
-        if hasattr(self, 'psf'): # wavelength-dependent resolution function is specified
-            LAMOST_wave = self.psf[:,0]
-            LAMOST_R = self.psf[:,1]
-            delta_lambda_LAMOST = LAMOST_wave / LAMOST_R
-            delta_lambda = np.interp(wavelength, LAMOST_wave, delta_lambda_LAMOST)
-            G = [ GaussKernel(self.network.wave, w, delta_lambda[i] / FWHM_factor) for i,w in enumerate(wavelength)]
-        elif hasattr(self, 'psf_R'): # instrument resolution is specified
-            R = self.psf_R
-            center_lambda = 0.5 * (max(self.network.wave) + min(self.network.wave))
-            delta_lambda  = center_lambda / R
-            sigma = delta_lambda / FWHM_factor
-            pixel_width = (max(self.network.wave) - min(self.network.wave))/len(self.network.wave)
-            kernel_sigma = sigma / pixel_width
 
         def fit_func(dummy_variable, *labels):
             nn_spec = self.network.get_spectrum_scaled(scaled_labels = labels[:nnl])
             nn_spec = doppler_shift(self.network.wave, nn_spec, labels[nnl])
-            if hasattr(self, 'psf'):
-                nn_resampl = [G[i].integrate(nn_spec) for i,w in enumerate(wavelength)]
-                nn_resampl = np.array(nn_resampl)
-            elif hasattr(self, 'psf_R'):
-                nn_conv = gaussian_filter1d(nn_spec, kernel_sigma)
-                nn_resampl = np.interp(wavelength, self.network.wave, nn_conv)
+            if hasattr(self, 'lsf'):
+                nn_resampl = self.lsf.apply(nn_spec)
             else:
                 nn_resampl = np.interp(wavelength, self.network.wave, nn_spec)
             Cheb_coefs = labels[nnl + 1 : nnl + 1 + self.Cheb_order]
