@@ -42,7 +42,7 @@ def run_one_item(item):
 
     fn = run_id + '.npz'
     sp = RND.interpolate(pp_arr, N_interpol_threads)
-    np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp)
+    np.savez(os.path.join(rnd_grid_dir, fn), flux=sp, labels=pp, wave=wave)
     shutil.rmtree(rgs_dir, ignore_errors=True)
 
     print('Grid model '+run_id+' complete')
@@ -59,6 +59,7 @@ def create_subgrid(pp, grid):
     ---
     Returns disctionary with subgrid boundaries
     """
+    vsini = param_names[2]
     grid_params = [p for p in param_names if grid[p][0]!=grid[p][1]]
     subgrid = {}
     for p in param_names:
@@ -66,7 +67,34 @@ def create_subgrid(pp, grid):
             step = GSSP_steps[p][0]
         else:
             step = GSSP_steps[p][1] if pp[p]<GSSP_steps[p][0] else GSSP_steps[p][2]
-            
+
+        if p==vsini:
+            subgrid[p] = [pp[p], pp[p], step]
+        elif p in grid_params:
+            start = pp[p] - pp[p]%step
+            subgrid[p] = [start, start + step, step]
+        else:
+            subgrid[p] = grid[p] + [step]
+
+    return subgrid
+
+def _create_subgrid(pp, grid):
+    """
+    Creates a single-cell subgrid
+    ---
+    pp: dictionary with parameter values
+    grid: dictionary with grid boundaries
+    ---
+    Returns disctionary with subgrid boundaries
+    """
+    grid_params = [p for p in param_names if grid[p][0]!=grid[p][1]]
+    subgrid = {}
+    for p in param_names:
+        if len(GSSP_steps[p]) == 1:
+            step = GSSP_steps[p][0]
+        else:
+            step = GSSP_steps[p][1] if pp[p]<GSSP_steps[p][0] else GSSP_steps[p][2]
+
         if p in grid_params:
             start = pp[p] - pp[p]%step
             subgrid[p] = [start, start + step, step]

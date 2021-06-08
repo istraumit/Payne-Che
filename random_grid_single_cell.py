@@ -10,11 +10,12 @@ from time import time
 from CustomPool import CustomPool
 
 
-def sample_point(grid):
+def sample_point(grid, uniform_fraction):
     pp = {}
     for p in param_names:
         if grid[p][0] == grid[p][1]: continue
-        if len(grid[p])==2:
+        q = np.random.rand()
+        if len(grid[p])==2 or (len(grid[p])==4 and q<uniform_fraction):
             v = grid[p][0] + np.random.rand() * (grid[p][1] - grid[p][0])
         else:
             v = grid[p][2] + np.random.randn() * grid[p][3]
@@ -47,11 +48,12 @@ for o in opt:
     if o in param_names:
         grid[o] = [float(x) for x in opt[o]]
 
-grid_params = [p for p in param_names if grid[p][0]!=grid[p][1]]
+vsini = param_names[2]
+grid_params = [p for p in param_names if grid[p][0]!=grid[p][1] and p!=vsini]
 
 work = []
 for i in range(N_oversample):
-    pp = sample_point(grid)
+    pp = sample_point(grid, 0.0)
     pp_arr = []
     for j,v in enumerate(grid_params):
         pp_arr.append(pp[v])
