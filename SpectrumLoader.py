@@ -87,6 +87,17 @@ def load_ASCII(path):
     return sd
 
 
+def load_NPZ(path):
+    npz = np.load(path)
+    flux = np.squeeze(npz['flux'])
+    w = npz['wave']
+    N = len(flux)
+    wave = np.linspace(w[0], w[1], N)
+    err = 1e-3 + np.zeros(len(flux))
+    sd = SpectrumData(wave, flux, err)
+    sd.obj_id = os.path.basename(path)
+    return sd
+
 
 class SpectrumWrapper():
     """
@@ -110,7 +121,8 @@ class SpectrumLoader():
         _selector = {
             'HERMES':load_HERMES,
             'APOGEE':load_APOGEE,
-            'ASCII':load_ASCII, }
+            'ASCII':load_ASCII, 
+            'NPZ':load_NPZ,}
 
         if not format in _selector:
             raise Exception('Unknown spectrum format '+format)

@@ -12,10 +12,11 @@ if len(sys.argv) < 2:
 path = sys.argv[1]
 
 N_limit = -1
-if len(sys.argv) > 2: N_limit = int(sys.argv[2])
-if N_limit <= 0:
-    print('Zero models to assemble, exiting.')
-    exit()
+if len(sys.argv) > 2:
+    N_limit = int(sys.argv[2])
+    if N_limit <= 0:
+        print('Zero models to assemble, exiting.')
+        exit()
 
 grid_fn = '_GRID.npz'
 if N_limit > 0:
@@ -31,7 +32,7 @@ for fn in files:
     N += 1
     if N_limit > 0 and N > N_limit: break
     npz = np.load(os.path.join(path, fn), allow_pickle=True)
-    flx = npz['flux']
+    flx = np.squeeze(npz['flux'])
     flx_sum = sum(flx)
     if isnan(flx_sum):
         print('NANs in flux: excluded from grid')

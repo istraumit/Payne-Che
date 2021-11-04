@@ -30,6 +30,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     end_idx = bisect(wave, wave_end)
     wave = wave[start_idx:end_idx]
     flux = flux[start_idx:end_idx]
+    err = err[start_idx:end_idx]
     SNR = DER_SNR(flux)
     f_mean = np.mean(flux)
     flux /= f_mean
@@ -48,14 +49,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
 
-    fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
-
-    if 'psf_function' in opt:
-        fit.psf = np.loadtxt(opt['psf_function'][0])
-        R = np.mean(fit.psf)
-    elif 'spectral_R' in opt:
-        R = float(opt['spectral_R'][0])
-        fit.psf_R = R
+    #fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
 
     fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
     fit.N_pre_search = int(opt['N_presearch'][0])

@@ -125,7 +125,7 @@ class NNTraining:
     def train_on_npz(self, npz_path, validation_fraction=0.1):
         self.vf = validation_fraction
         data = np.load(npz_path, allow_pickle=True)
-        spectra = data['flux'][:,:,0]
+        spectra = np.squeeze(data['flux'])
         labels  = data['labels']
         self.wave = data['wvl']
         print('spectra', spectra.shape)
