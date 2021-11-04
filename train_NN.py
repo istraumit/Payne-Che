@@ -9,9 +9,9 @@ bs = int(sys.argv[1])
 nn = int(sys.argv[2])
 npz_path = sys.argv[3]
 
-NNT = NNTraining(num_neurons=nn, batch_size=bs, batch_size_valid=bs)
+NNT = NNTraining(num_neurons=nn, batch_size=bs)
 
-NNT.train_on_npz(npz_path, validation_fraction=0.1)
+NNT.train_on_npz(npz_path, wave_range=(4199, 5800), validation_fraction=0.1)
 
 
 

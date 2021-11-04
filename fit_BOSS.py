@@ -1,7 +1,6 @@
 import os, sys
 import numpy as np
 from bisect import bisect
-from DER_SNR import DER_SNR
 from Network import Network
 from common import param_names, param_units, parse_inp
 from Fit import Fit
@@ -31,7 +30,6 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     wave = wave[start_idx:end_idx]
     flux = flux[start_idx:end_idx]
     err = err[start_idx:end_idx]
-    SNR = DER_SNR(flux)
     f_mean = np.mean(flux)
     flux /= f_mean
     err /= f_mean
@@ -49,7 +47,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
 
-    #fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
+    fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
 
     fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
     fit.N_pre_search = int(opt['N_presearch'][0])
@@ -106,7 +104,7 @@ if __name__=='__main__':
 
     if parallel:
         print('Parallel processing option is ON')
-        with Pool() as pool:
+        with Pool(processes=32) as pool:
             pool.map(process, spectra)
     else:
         for sp in spectra: process(sp)

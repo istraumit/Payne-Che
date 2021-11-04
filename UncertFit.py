@@ -24,7 +24,7 @@ class UncertFit:
         self.RV_step = 0.01
 
     def run(self, wave, flux, flux_err):
-        return self._run_3(wave, flux, flux_err)
+        return self._run_2(wave, flux, flux_err)
 
     def _get_RV_uncert(self, i, popt, CHI2_C, chi2_func):
         step = self.RV_step

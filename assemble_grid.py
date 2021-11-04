@@ -22,7 +22,7 @@ grid_fn = '_GRID.npz'
 if N_limit > 0:
     grid_fn = '_GRID_' + str(N_limit) + '.npz'
 
-files = [fn for fn in os.listdir(path) if fn.endswith('.npz')]
+files = [fn for fn in os.listdir(path) if fn.endswith('.npz') and not fn.startswith('_')]
 files.sort()
 
 fluxes, params = [],[]

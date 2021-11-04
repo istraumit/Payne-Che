@@ -19,14 +19,13 @@ def sample_point(grid, uniform_fraction):
             v = grid[p][0] + np.random.rand() * (grid[p][1] - grid[p][0])
         else:
             v = grid[p][2] + np.random.randn() * grid[p][3]
-            if v < grid[p][2]:
-                v = grid[p][2] + (grid[p][2] - v)
+            #if v < grid[p][2]: v = grid[p][2] + (grid[p][2] - v)
         pp[p] = v
     return pp
-    
+
 def printt(*arg):
     t = '%.2f'%time()
-    print(t, *arg)    
+    print(t, *arg)
 
 opt_fn = sys.argv[1]
 opt = parse_inp(opt_fn)

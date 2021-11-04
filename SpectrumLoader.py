@@ -30,8 +30,12 @@ def load_HERMES(fn):
     wavelengthend = wavelengthbegin + (numberpoints-1)*ref_del
     wavelengths = np.linspace(wavelengthbegin,wavelengthend,numberpoints)
     wavelengths = np.exp(wavelengths)
+    SNR = DER_SNR(flux)
+    err = flux/SNR
 
-    return SpectrumData(wavelengths, flux, None)
+    sd = SpectrumData(wavelengths, flux, err)
+    sd.obj_id = os.path.basename(fn)
+    return sd
 
 def load_APOGEE(path):
     spec = rdspec(path)
