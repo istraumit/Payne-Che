@@ -26,7 +26,7 @@ import torch
 import time
 from torch.autograd import Variable
 from RAdam import RAdam
-
+from bisect import bisect
 
 #===================================================================================================
 # simple multi-layer perceptron model
@@ -122,12 +122,16 @@ class NNTraining:
         self.batch_size_valid = batch_size_valid 
         self.CUDA = torch.cuda.is_available()
 
-    def train_on_npz(self, npz_path, validation_fraction=0.1):
+    def train_on_npz(self, npz_path, wave_range, validation_fraction=0.1):
         self.vf = validation_fraction
         data = np.load(npz_path, allow_pickle=True)
-        spectra = np.squeeze(data['flux'])
+        wave = data['wvl']
+        i_start = bisect(wave, wave_range[0])
+        i_end = bisect(wave, wave_range[1])
+        print('Wave index range:', i_start, i_end)
+        spectra = np.squeeze(data['flux'])[:,i_start:i_end]
         labels  = data['labels']
-        self.wave = data['wvl']
+        self.wave = wave[i_start:i_end]
         print('spectra', spectra.shape)
         print('labels', labels.shape)
         N_total = spectra.shape[0]
