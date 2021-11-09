@@ -1,7 +1,6 @@
 import os, sys
 import numpy as np
 from bisect import bisect
-from DER_SNR import DER_SNR
 from Network import Network
 from common import param_names, param_units, parse_inp
 from Fit import Fit
@@ -11,27 +10,29 @@ from random_grid_common import parse_inp
 from multiprocessing import Pool, Lock
 from FitLogger import FitLogger
 import matplotlib.pyplot as plt
+from SpectrumLoader import SpectrumLoader
+from LSF import *
 
 lock = Lock()
 
-def fit_BOSS(path, NN, opt, logger, constraints={}):
+def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
 
     wave_start = float(opt['wave_range'][0])
     wave_end = float(opt['wave_range'][1])
     Cheb_order = int(opt['N_chebyshev'][0])
 
-    data = np.loadtxt(path)
-    wave = data[:,0]
-    flux = data[:,1]
+    wave = spectrum.wave
+    flux = spectrum.flux
+    err = spectrum.err
 
     start_idx = bisect(wave, wave_start)
     end_idx = bisect(wave, wave_end)
     wave = wave[start_idx:end_idx]
     flux = flux[start_idx:end_idx]
-    SNR = DER_SNR(flux)
+    err = err[start_idx:end_idx]
     f_mean = np.mean(flux)
     flux /= f_mean
-    err = flux / SNR
+    err /= f_mean
 
     grid_params = [p for p in param_names if NN.grid[p][0]!=NN.grid[p][1]]
     bounds_unscaled = np.zeros((2, len(grid_params)))
@@ -46,22 +47,15 @@ def fit_BOSS(path, NN, opt, logger, constraints={}):
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
 
-    if 'psf_function' in opt:
-        fit.psf = np.loadtxt(opt['psf_function'][0])
-        R = np.mean(fit.psf)
-    elif 'spectral_R' in opt:
-        R = float(opt['spectral_R'][0])
-        fit.psf_R = R
-    else:
-        raise Exception('Please specify either constant (spectral_R:<float>) or wavelength-dependent (psf_function:<path to the file>) resolution in the .conf file')
+    fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
 
     fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
     fit.N_pre_search = int(opt['N_presearch'][0])
-    unc_fit = UncertFit(fit, R)
+    unc_fit = UncertFit(fit, float(opt['spectral_R'][0]))
     fit_res = unc_fit.run(wave, flux, err)
     CHI2 = fit_res.chi2_func(fit_res.popt)
 
-    name = os.path.basename(path)
+    name = spectrum.obj_id
     row = [name]
     k = 0
     for i,v in enumerate(param_names):
@@ -85,12 +79,11 @@ def fit_BOSS(path, NN, opt, logger, constraints={}):
 
 
 if __name__=='__main__':
-    if len(sys.argv)<3:
-        print('Use:', sys.argv[0], '<config file> <path to the data>')
+    if len(sys.argv)<2:
+        print('Use:', sys.argv[0], '<config file>')
         exit()
 
     opt = parse_inp(sys.argv[1])
-    path = sys.argv[2]
 
     NN_path = opt['NN_path'][0]
     NN = Network()
@@ -100,25 +93,21 @@ if __name__=='__main__':
     #constr['[M/H]'] = (0.2-0.01, 0.2+0.01)
     
     logger = FitLogger(opt['log_dir'][0], delete_old=True)
+    loader = SpectrumLoader(opt['data_format'][0])
 
-    def process(fn):
-        path_fn = os.path.join(path, fn)
-        res = fit_BOSS(path_fn, NN, opt, logger)
+    def process(sp):
+        sd = sp.load()
+        res = fit_BOSS(sd, NN, opt, logger)
 
-    if os.path.isfile(path):
-        process(path)
-    elif os.path.isdir(path):
-        files = [fn for fn in os.listdir(path)]
-        files.sort()
-        parallel = opt['parallel'][0].lower() in ['true', 'yes', '1']
-        if parallel:
-            print('Parallel processing option is ON')
-            with Pool() as pool:
-                pool.map(process, files)
-        else:
-            for fn in files: process(fn)
+    spectra = loader.get_spectra(opt['data_path'][0])
+    parallel = opt['parallel'][0].lower() in ['true', 'yes', '1']
+
+    if parallel:
+        print('Parallel processing option is ON')
+        with Pool(processes=32) as pool:
+            pool.map(process, spectra)
     else:
-        print('Path "'+path+'" is neither file nor directory.')
+        for sp in spectra: process(sp)
 
 
 

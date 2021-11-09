@@ -131,7 +131,7 @@ def rdspec(filename=None):
         spec.skyerr = fits.getdata(filename,5)
         spec.telluric = fits.getdata(filename,6)
         spec.telerr = fits.getdata(filename,7)
-        spec.lsf = fits.getdata(filename,8)
+        #spec.lsf = fits.getdata(filename,8)
         spec.meta = fits.getdata(filename,9)    # meta-data
         # Spectrum, error, sky, skyerr are in units of 1e-17
         #  these are 2D arrays with [Nvisit+2,Npix]
