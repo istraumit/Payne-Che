@@ -12,6 +12,10 @@ from Fit import Fit
 from numpy.polynomial.chebyshev import chebval
 from fit_common import save_figure
 from UncertFit import UncertFit
+from multiprocessing import Pool, Lock
+
+
+lock = Lock()
 
 def load_spectrum(fn):
 
@@ -89,75 +93,48 @@ def get_indices(wave, w1, w2):
 def get_path(night, seq_id):
     return '/STER/mercator/hermes/'+night+'/reduced/'+seq_id.zfill(8)+'_HRF_OBJ_ext_CosmicsRemoved_log_merged_cf.fits'
 
-def fit_HERMES(night, seq_id, NN, wave_start, wave_end, Cheb_order=5, slices=False):
+def fit_HERMES(night, seq_id, NN, wave_start, wave_end, Cheb_order=5, constraints={}):
     fn = get_path(night, seq_id)
     wave, flux = load_spectrum(fn)
     hdr = fits.getheader(fn)
     obj_name = hdr['OBJECT']
-    print('-'*25)
-    print('Object:', obj_name)
-    print('Night, SeqId:', night, seq_id)
 
     start_idx = bisect(wave, wave_start)
     end_idx = bisect(wave, wave_end)
     wave = wave[start_idx:end_idx]
     flux = flux[start_idx:end_idx]
+    flux_original = np.copy(flux)
     SNR = DER_SNR(flux)
-    print('SNR:', SNR)
-    flux /= np.mean(flux)
+    flux_mean = np.mean(flux)
+    flux /= flux_mean
     err = flux / SNR
 
-    if not os.path.exists('FIT'):
-        os.makedirs('FIT')
+    grid_params = [p for p in param_names if NN.grid[p][0]!=NN.grid[p][1]]
+    bounds_unscaled = np.zeros((2, len(grid_params)))
+    for i,v in enumerate(grid_params):
+        if v in constraints:
+            bounds_unscaled[0,i] = constraints[v][0]
+            bounds_unscaled[1,i] = constraints[v][1]
+        else:
+            bounds_unscaled[0,i] = NN.grid[v][0]
+            bounds_unscaled[1,i] = NN.grid[v][1]
+
 
     fit = Fit(NN, Cheb_order)
+    fit.bounds_unscaled = bounds_unscaled
+    fit.N_presearch_iter = 1
+    fit.N_pre_search = 4000
     unc_fit = UncertFit(fit, 85000)
     fit_res = unc_fit.run(wave, flux, err)
-    CHI2 = fit_res.chi2_func(fit_res.popt)
-    print('Chi^2:', '%.2e'%CHI2)
 
-    with open('FIT/LOG', 'a') as flog:
-        L = [night, seq_id, '%.2e'%CHI2]
-        L.extend( [str(x) for x in fit_res.popt] )
-        s = ' '.join(L)
-        flog.write(s+'\n')
 
-    print('-'*25)
-    k = 0
-    for i,v in enumerate(param_names):
-        if NN.grid[v][0]!=NN.grid[v][1]:
-            print(v, ':', '%.2f'%fit_res.popt[k], '+/-', '%.4f'%fit_res.uncert[k], param_units[i])
-            k += 1
+    fit_res.wave = wave
+    fit_res.flux = flux_original
+    fit_res.model *= flux_mean
+    fit_res.obj_name = obj_name
+    return fit_res
 
-    print('RV:', '%.2f'%fit_res.popt[-1], 'km/s')
-    print('-'*25)
 
-    if slices: plot_slices(fit_res, NN, 10)
-
-    N_subplots = 5
-    xlbl = 'Wavelength [A]'
-    ylbl = 'Flux'
-    name = night + '_'+ seq_id + '.pdf'
-
-    multiplot(wave, flux, N_subplots, obj_name, 'Data', xlbl, ylbl)
-    multiplot(wave, fit_res.model, N_subplots, obj_name, 'Model', None, None)
-    save_figure('FIT/FIT_' + name)
-    plt.clf()
-    
-    resid = flux - fit_res.model
-    multiplot(wave, resid, N_subplots, obj_name, 'Residuals', xlbl, ylbl)
-    save_figure('FIT/RESID_' + name)
-    plt.clf()
-    
-    return
-    che_coef = popt[-Cheb_order-1:-1]
-    print(che_coef)
-    che_x = np.linspace(-1, 1, len(flux))
-    che_poly = chebval(che_x, che_coef)
-    norm_flux = che_poly
-    multiplot(wave, norm_flux, 2, obj_name, 'Normalized flux', xlbl, ylbl)
-    save_figure('FIT/NORM_' + name)
-    plt.clf()
     
 
 if __name__=='__main__':
