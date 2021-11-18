@@ -1,4 +1,5 @@
 import numpy as np
+import struct
 
 def leaky_relu(z):
     '''
@@ -30,6 +31,39 @@ class Network:
             self.grid = tmp["grid"].item()
         tmp.close()
 
+    def write_binary(self, path):
+        def write_vector(v, path):
+            s = struct.pack('f'*v.shape[0],*v)
+            with open(path, 'ab') as f:
+                f.write(s)
+
+        def write_matrix(m, path):
+            for i in range(m.shape[0]):
+                write_vector(m[i,:], path)
+
+        w_array_0, w_array_1, w_array_2, b_array_0, b_array_1, b_array_2 = self.NN_coeffs
+        print(w_array_0.shape)
+        print(w_array_1.shape)
+        print(w_array_2.shape)
+        print(b_array_0.shape)
+        print(b_array_1.shape)
+        print(b_array_2.shape)
+
+        header = []
+        header.append(w_array_0.shape[1])
+        header.append(w_array_1.shape[0])
+        header.append(w_array_2.shape[0])
+        s = struct.pack('i'*len(header),*header)
+        with open(path, 'wb') as f:
+            f.write(s)
+        write_matrix(w_array_0, path)
+        write_matrix(w_array_1, path)
+        write_matrix(w_array_2, path)
+        write_vector(b_array_0, path)
+        write_vector(b_array_1, path)
+        write_vector(b_array_2, path)
+
+
     def num_labels(self):
         return self.NN_coeffs[0].shape[-1]
 
@@ -50,8 +84,4 @@ class Network:
         outside = np.einsum('ij,j->i', w_array_1, leaky_relu(inside)) + b_array_1
         spectrum = np.einsum('ij,j->i', w_array_2, leaky_relu(outside)) + b_array_2
         return spectrum
-
-
-
-
 
