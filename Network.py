@@ -42,12 +42,6 @@ class Network:
                 write_vector(m[i,:], path)
 
         w_array_0, w_array_1, w_array_2, b_array_0, b_array_1, b_array_2 = self.NN_coeffs
-        print(w_array_0.shape)
-        print(w_array_1.shape)
-        print(w_array_2.shape)
-        print(b_array_0.shape)
-        print(b_array_1.shape)
-        print(b_array_2.shape)
 
         header = []
         header.append(w_array_0.shape[1])
