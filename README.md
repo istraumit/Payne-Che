@@ -29,12 +29,23 @@ Assemble a grid into a single 'npz' file using 'assemble_grid.py' module and run
 uses torch framework and requires a CUDA device. The neural network is saved into 'NN_\*.npz' file.
 
 ## Fitting model spectra
-Use 'fit_HERMES.py' or 'fit_APOGEE.py' to fit model spectra. 
+Run 'python run_MWMPayne.py <config_file>' to estimate stellar parameters from spectra.
 
-'fit_APOGEE.py' takes as arguments a path to an APOGEE spectrum (apStar or apVisit) and a path to the neural network.
+The <config_file> is a text file that contains all the parameters needed to process the data.
+Each line has a format "parameter: value, value, ... value". The parameters available are
+described below.
 
-'fit_HERMES.py' takes night and sequence id as arguments and reads a HERMES spectrum from /STER filesystem. 
-No need to normalize it. The path to the neural network is hardcoded at the moment.
+NN_path: <path to the neural network file>
+data_path: <path to the directory with input data>
+wave_range: 15000, 17000 # wavelength range in Angstroem
+N_chebyshev: 15 # number of Chebyshev polynomials representing instrumental response function
+spectral_R: 22500 # resolution of the instrument
+N_presearch_iter: 1
+N_presearch: 4000
+parallel: yes # turns on parallel processing of input spectra
+log_dir: <path to the directory where logging data will be saved during processing>
+data_format: {APOGEE|HERMES|ASCII} # input data format
+
 
 ## Installation
 
