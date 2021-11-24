@@ -81,8 +81,11 @@ for i in range(N_models):
     work.append(work_item)
     
 
-with CustomPool(processes=N_instances) as pool:
-    ret = pool.map(run_one_item, work, chunksize=1)
+if N_instances>1:
+    with CustomPool(processes=N_instances) as pool:
+        ret = pool.map(run_one_item, work, chunksize=1)
+else:
+    for item in work: run_one_item(item)
 
 
 print('Done.')
