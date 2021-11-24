@@ -50,7 +50,7 @@ def run_one_item(item):
     return 0
 
 
-def create_subgrid(pp, grid):
+def _create_subgrid(pp, grid):
     """
     Creates a single-cell subgrid
     ---
@@ -78,7 +78,7 @@ def create_subgrid(pp, grid):
 
     return subgrid
 
-def _create_subgrid(pp, grid):
+def create_subgrid(pp, grid):
     """
     Creates a single-cell subgrid
     ---
