@@ -77,6 +77,27 @@ def load_APOGEE(path):
     return sd
 
 
+def load_BOSS(path):
+    data = fits.getdata(path, 1)
+    flux = data.field('FLUX')
+    wave = 10**data.field('LOGLAM')
+    ivar = data.field('IVAR')
+
+    nans = np.isnan(flux)
+    bad = (ivar==0)
+    good = np.logical_not(np.logical_or(nans, bad))
+
+    flux = flux[good]
+    wave = wave[good]
+    ivar = ivar[good]
+
+    err = 1.0/np.sqrt(ivar)
+
+    sd = SpectrumData(wave, flux, err)
+    sd.obj_id = os.path.basename(path)
+    return sd
+
+
 def load_ASCII(path):
     data = np.loadtxt(path)
     wave = data[:,0]
@@ -125,6 +146,7 @@ class SpectrumLoader():
         _selector = {
             'HERMES':load_HERMES,
             'APOGEE':load_APOGEE,
+            'BOSS':load_BOSS,
             'ASCII':load_ASCII, 
             'NPZ':load_NPZ,}
 
@@ -144,15 +166,15 @@ class SpectrumLoader():
 if __name__=='__main__':
     import matplotlib.pyplot as plt
 
-    SL = SpectrumLoader('APOGEE')
+    SL = SpectrumLoader('BOSS')
 
-    spectra = SL.get_spectra('/home/elwood/Documents/SDSS/Pathfinder/APOGEE/DR17/spectra')
+    spectra = SL.get_spectra('/home/elwood/Documents/SDSS/BOSS/test')
 
     for sp in spectra:
         sd = sp.load()
 
         plt.title(sp._path)
-        plt.plot(sd.wave, sd.err)
+        plt.errorbar(sd.wave, sd.flux, yerr=sd.err)
         plt.show()
 
 
