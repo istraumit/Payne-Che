@@ -12,6 +12,8 @@ from FitLogger import FitLogger
 import matplotlib.pyplot as plt
 from SpectrumLoader import SpectrumLoader
 from LSF import *
+from DER_SNR import DER_SNR
+
 
 lock = Lock()
 
@@ -55,8 +57,10 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit_res = unc_fit.run(wave, flux, err)
     CHI2 = fit_res.chi2_func(fit_res.popt)
 
+    SNR = DER_SNR(flux)
+
     name = spectrum.obj_id
-    row = [name]
+    row = [name, '%.1f'%SNR]
     k = 0
     for i,v in enumerate(param_names):
         if NN.grid[v][0]!=NN.grid[v][1]:
