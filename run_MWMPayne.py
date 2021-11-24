@@ -103,7 +103,11 @@ if __name__=='__main__':
         sd = sp.load()
         res = fit_BOSS(sd, NN, opt, logger)
 
-    spectra = loader.get_spectra(opt['data_path'][0])
+    regex = '.'
+    if 'name_regex' in opt:
+        regex = opt['name_regex'][0]
+
+    spectra = loader.get_spectra(opt['data_path'][0], regex)
     parallel = opt['parallel'][0].lower() in ['true', 'yes', '1']
 
     if parallel:

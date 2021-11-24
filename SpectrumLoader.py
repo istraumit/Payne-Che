@@ -3,6 +3,7 @@ import numpy as np
 from astropy.io import fits
 from SDSS import rdspec, Spec1D
 from DER_SNR import DER_SNR
+import re
 
 
 class SpectrumData:
@@ -155,11 +156,12 @@ class SpectrumLoader():
 
         self._load_func = _selector[format]
 
-    def get_spectra(self, path, ext_filter=''):
+    def get_spectra(self, path, re_expr='.'):
+        regex = re.compile(re_expr)
         if os.path.isfile(path):
             return [SpectrumWrapper(self._load_func, path)]
         elif os.path.isdir(path):
-            files = [fn for fn in os.listdir(path) if fn.endswith(ext_filter)]
+            files = [fn for fn in os.listdir(path) if regex.match(fn)]
             files.sort()
             return [SpectrumWrapper(self._load_func, os.path.join(path, fn)) for fn in files]
 
