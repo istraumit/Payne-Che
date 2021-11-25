@@ -7,7 +7,7 @@ from Fit import Fit
 from fit_common import save_figure
 from UncertFit import UncertFit
 from random_grid_common import parse_inp
-from multiprocessing import Pool, Lock
+from multiprocessing import Pool, Lock, cpu_count
 from FitLogger import FitLogger
 import matplotlib.pyplot as plt
 from SpectrumLoader import SpectrumLoader
@@ -109,10 +109,14 @@ if __name__=='__main__':
 
     spectra = loader.get_spectra(opt['data_path'][0], regex)
     parallel = opt['parallel'][0].lower() in ['true', 'yes', '1']
+    if 'N_threads' in opt:
+        N_threads = int(opt['N_threads'][0])
+    else:
+        N_threads = cpu_count()//2
 
     if parallel:
-        print('Parallel processing option is ON')
-        with Pool(processes=32) as pool:
+        print('Parallel processing option is ON, running with ' + str(N_threads) + ' threads')
+        with Pool(processes=N_threads) as pool:
             pool.map(process, spectra)
     else:
         for sp in spectra: process(sp)
