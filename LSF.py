@@ -37,13 +37,11 @@ class LSFBase:
         raise Exception('Not implemented')
 
 
-class LSF_wave_R(LSFBase):
-    def __init__(self, wave, R, spec_wave, NN_wave):
+class LSF_wave_delta(LSFBase):
+    def __init__(self, delta, spec_wave, NN_wave):
         super().__init__()
-        delta_lambda = wave / R
-        delta_lambda = np.interp(spec_wave, wave, delta_lambda)
         self.spec_wave = spec_wave
-        self.G = [ GaussKernel(NN_wave, w, delta_lambda[i] / self.FWHM_factor) for i,w in enumerate(spec_wave)]
+        self.G = [ GaussKernel(NN_wave, w, delta[i] / self.FWHM_factor) for i,w in enumerate(spec_wave)]
 
     def apply(self, flux):
         res = [self.G[i].integrate(flux) for i,w in enumerate(self.spec_wave)]
@@ -51,12 +49,17 @@ class LSF_wave_R(LSFBase):
         return res
 
 
-class LSF_Fixed_R(LSF_wave_R):
+class LSF_wave_R(LSF_wave_delta):
+    def __init__(self, wave, R, spec_wave, NN_wave):
+        delta_lambda = wave / R
+        delta_lambda = np.interp(spec_wave, wave, delta_lambda)
+        super().__init__(delta_lambda, spec_wave, NN_wave)
+
+
+class LSF_Fixed_R(LSF_wave_delta):
     def __init__(self, R, spec_wave, NN_wave):
-        self.init_FWHM()
         delta_lambda = spec_wave / R
-        self.spec_wave = spec_wave
-        self.G = [ GaussKernel(NN_wave, w, delta_lambda[i] / self.FWHM_factor) for i,w in enumerate(spec_wave)]
+        super().__init__(delta_lambda, spec_wave, NN_wave)
 
 
 class LSF_APOGEE(LSFBase):

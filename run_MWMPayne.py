@@ -50,7 +50,10 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit = Fit(NN, Cheb_order)
     fit.bounds_unscaled = bounds_unscaled
 
-    fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
+    if opt['data_format'][0] == 'BOSS':
+        fit.lsf = LSF_wave_delta(spectrum.wres[start_idx:end_idx], wave, NN.wave)
+    else:
+        fit.lsf = LSF_Fixed_R(float(opt['spectral_R'][0]), wave, NN.wave)
 
     fit.N_presearch_iter = int(opt['N_presearch_iter'][0])
     fit.N_pre_search = int(opt['N_presearch'][0])

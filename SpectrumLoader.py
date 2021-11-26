@@ -83,6 +83,7 @@ def load_BOSS(path):
     flux = data.field('FLUX')
     wave = 10**data.field('LOGLAM')
     ivar = data.field('IVAR')
+    wres = data.field('WRESL')
 
     nans = np.isnan(flux)
     bad = (ivar==0)
@@ -91,11 +92,13 @@ def load_BOSS(path):
     flux = flux[good]
     wave = wave[good]
     ivar = ivar[good]
+    wres = wres[good]
 
     err = 1.0/np.sqrt(ivar)
 
     sd = SpectrumData(wave, flux, err)
     sd.obj_id = os.path.basename(path)
+    sd.wres = wres
     return sd
 
 
