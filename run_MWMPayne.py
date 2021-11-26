@@ -8,11 +8,12 @@ from fit_common import save_figure
 from UncertFit import UncertFit
 from random_grid_common import parse_inp
 from multiprocessing import Pool, Lock, cpu_count
-from FitLogger import FitLogger
+from FitLogger import FitLoggerDB
 import matplotlib.pyplot as plt
 from SpectrumLoader import SpectrumLoader
 from LSF import *
 from DER_SNR import DER_SNR
+import traceback
 
 
 lock = Lock()
@@ -62,11 +63,22 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     name = spectrum.obj_id
     row = [name, '%.1f'%SNR]
     k = 0
+    db_values = []
     for i,v in enumerate(param_names):
         if NN.grid[v][0]!=NN.grid[v][1]:
             row.append('%.2f'%fit_res.popt[k])
             row.append('%.4f'%fit_res.uncert[k])
+            db_values.append(fit_res.popt[k])
+            db_values.append(fit_res.uncert[k])
             k += 1
+        else:
+            db_values.append(None)
+            db_values.append(None)
+
+    db_values.append(fit_res.popt[k])
+    db_values.append(fit_res.RV_uncert)
+    db_cheb = fit_res.popt[k+1:]
+
     row.append('%.2f'%fit_res.popt[k])
     row.append('%.2f'%fit_res.RV_uncert)
     txt = ' '.join(row)
@@ -75,7 +87,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit_res.model *= f_mean
 
     logger.save_plot(wave, flux*f_mean, fit_res.model, name)
-    logger.add_record(txt)
+    logger.add_record(name, SNR, db_values, db_cheb)
     print(txt)
 
     return fit_res
@@ -95,13 +107,22 @@ if __name__=='__main__':
 
     constr = {}
     #constr['[M/H]'] = (0.2-0.01, 0.2+0.01)
-    
-    logger = FitLogger(opt['log_dir'][0], delete_old=True)
+
+    logger = FitLoggerDB(opt['log_dir'][0])
+    logger.init_DB()
+    logger.new_run(str(opt))
+
     loader = SpectrumLoader(opt['data_format'][0])
 
     def process(sp):
         sd = sp.load()
-        res = fit_BOSS(sd, NN, opt, logger)
+        try:
+            res = fit_BOSS(sd, NN, opt, logger)
+        except:
+            exc_text = traceback.format_exc()
+            with open('ERROR_LOG', 'a') as errlog:
+                errlog.write(exc_text)
+                errlog.write('\n')
 
     regex = '.'
     if 'name_regex' in opt:
@@ -121,7 +142,7 @@ if __name__=='__main__':
     else:
         for sp in spectra: process(sp)
 
-
+    logger.close()
 
 
 

@@ -2,6 +2,8 @@ import os, shutil
 import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Lock
+import sqlite3
+import datetime
 
 
 def multiplot(wave, flux, model, N, xlbl, ylbl):
@@ -19,18 +21,17 @@ def multiplot(wave, flux, model, N, xlbl, ylbl):
             if xlbl!=None: axes[i].set_xlabel(xlbl)
             axes[i].legend()
 
-class FitLogger:
 
-    def __init__(self, log_dir, delete_old=False):
-        if delete_old: shutil.rmtree(log_dir, ignore_errors=True)
+class FitLoggerDB:
+
+    def __init__(self, log_dir):
         os.makedirs(log_dir, exist_ok=True)
         self.log_dir = log_dir
-        self.log_file_name = 'LOG'
         self.N_subplots = 5
         self.figure_width = 20
         self.figure_height = 10
         self.dpi = 300
-        self.lock = Lock()
+        self.DB_name = 'LOG.sqlite3'
 
     def save_plot(self, wave, flux, model, name):
         N = self.N_subplots
@@ -42,18 +43,93 @@ class FitLogger:
         plt.tight_layout()
 
         path = os.path.join(self.log_dir, name)
-        fig.savefig(path + '.png', dpi=self.dpi)
         fig.savefig(path + '.pdf', dpi=self.dpi)
-        
         fig.clf()
 
-    def add_record(self, text):
-        self.lock.acquire()
-        path = os.path.join(self.log_dir, self.log_file_name)
-        with open(path, 'a') as f:
-            f.write(text)
-            f.write('\n')
-        self.lock.release()
+    def _DB_path(self):
+        return os.path.join(self.log_dir, self.DB_name)
+
+    def init_DB(self):
+        params = ['TEFF','LOGG','VSINI','VMICRO','MH','RV']
+        fields = ['SNR']
+        for pn in params:
+            fields.append(pn)
+            fields.append(pn + '_ERR')
+        self.fields = fields
+
+        path = self._DB_path()
+        exists = os.path.isfile(path)
+
+        conn = sqlite3.connect(path)
+        curs = conn.cursor()
+
+        if not exists:
+            curs.execute("""
+CREATE TABLE RUNS (
+run_id INTEGER PRIMARY KEY NOT NULL,
+date TEXT NOT NULL,
+config TEXT NOT NULL);""")
+            curs.execute("""
+CREATE TABLE RESULTS (
+res_id INTEGER PRIMARY KEY NOT NULL,
+run_id INTEGER NOT NULL,
+date TEXT NOT NULL,
+object TEXT,""" + ','.join([f+' REAL' for f in fields])+""",
+FOREIGN KEY (run_id) REFERENCES RUNS(run_id) ON DELETE CASCADE ON UPDATE CASCADE
+);""")
+            curs.execute("""
+CREATE TABLE RESPONSE (
+res_id INTEGER NOT NULL,
+coeff_n INTEGER NOT NULL,
+value REAL NOT NULL,
+FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASCADE
+);""")
+
+            conn.commit()
+            curs.execute("ANALYZE;")
+            conn.commit()
+        self.conn = conn
+        self.curs = curs
+
+    def new_run(self, config):
+        date = str(datetime.datetime.now())
+        self.curs.execute("INSERT INTO RUNS(date, config) VALUES (?,?);", (date, config))
+        self.conn.commit()
+        self.run_id = self.curs.lastrowid
+        return self.run_id
+
+    def add_record(self, obj_id, snr, st_params, cheb_coef):
+        date = str(datetime.datetime.now())
+        N_values = 12
+        assert len(st_params)==N_values
+        field_list = ['run_id','object','date'] + self.fields
+        qest_marks = ['?' for i in range(N_values + 4)]
+        value_list = [self.run_id, obj_id, date, snr] + st_params
+        self.curs.execute("INSERT INTO RESULTS (" + ','.join(field_list) + ") VALUES (" + ','.join(qest_marks) + ");", value_list)
+        res_id = self.curs.lastrowid
+
+        for i,v in enumerate(cheb_coef):
+            self.curs.execute("INSERT INTO RESPONSE (res_id, coeff_n, value) VALUES (?,?,?);", (res_id, i, v))
+
+        self.conn.commit()
+
+    def close(self):
+        self.curs.close()
+        self.conn.close()
+
+if __name__=='__main__':
+    DB = FitLoggerDB('.')
+    DB.init_DB()
+    DB.new_run('test')
+    stp = list(np.random.rand(12))
+    stp[8] = None
+    stp[9] = None
+    che = list(np.random.rand(15))
+    DB.add_record('star', 50.0, stp, che)
+    DB.close()
+
+
+
 
 
 
