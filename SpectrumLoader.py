@@ -159,7 +159,11 @@ class SpectrumLoader():
     def get_spectra(self, path, re_expr='.'):
         regex = re.compile(re_expr)
         if os.path.isfile(path):
-            return [SpectrumWrapper(self._load_func, path)]
+            files = []
+            with open(path) as f:
+                for line in f:
+                    files.append(line.strip())
+            return [SpectrumWrapper(self._load_func, fn) for fn in files]
         elif os.path.isdir(path):
             files = [fn for fn in os.listdir(path) if regex.match(fn)]
             files.sort()

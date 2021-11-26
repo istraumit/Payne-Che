@@ -115,14 +115,15 @@ if __name__=='__main__':
     loader = SpectrumLoader(opt['data_format'][0])
 
     def process(sp):
-        sd = sp.load()
         try:
+            sd = sp.load()
             res = fit_BOSS(sd, NN, opt, logger)
         except:
             exc_text = traceback.format_exc()
             with open('ERROR_LOG', 'a') as errlog:
                 errlog.write(exc_text)
                 errlog.write('\n')
+            print(exc_text)
 
     regex = '.'
     if 'name_regex' in opt:
