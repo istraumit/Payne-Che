@@ -116,9 +116,11 @@ if __name__=='__main__':
     logger.new_run(str(opt))
 
     loader = SpectrumLoader(opt['data_format'][0])
+    stop_code = 'LLCQHW'
 
     def process(sp):
         try:
+            if os.path.isfile(stop_code): return
             sd = sp.load()
             res = fit_BOSS(sd, NN, opt, logger)
         except:
@@ -148,6 +150,8 @@ if __name__=='__main__':
 
     logger.close()
 
+    if os.path.isfile(stop_code):
+        os.remove(stop_code)
 
 
 
