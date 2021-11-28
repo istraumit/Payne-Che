@@ -34,7 +34,7 @@ Run 'python run_MWMPayne.py <config_file>' to estimate stellar parameters from s
 The <config_file> is a text file that contains all the parameters needed to process the data.
 Each line has a format "parameter: value, value, ... value". The parameters available are
 described below.
-
+```
 NN_path: <path to the neural network file>
 data_path: <path to the directory with input data>
 wave_range: 15000, 17000 # wavelength range in Angstroem
@@ -45,7 +45,7 @@ N_presearch: 4000
 parallel: yes # turns on parallel processing of input spectra
 log_dir: <path to the directory where logging data will be saved during processing>
 data_format: {APOGEE|HERMES|ASCII} # input data format
-
+```
 
 ## Installation
 
