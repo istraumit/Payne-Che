@@ -32,6 +32,7 @@ class FitLoggerDB:
         self.figure_height = 10
         self.dpi = 300
         self.DB_name = 'LOG.sqlite3'
+        self.lock = Lock()
 
     def save_plot(self, wave, flux, model, name):
         N = self.N_subplots
@@ -99,19 +100,20 @@ FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASC
         return self.run_id
 
     def add_record(self, obj_id, snr, st_params, cheb_coef):
-        date = str(datetime.datetime.now())
-        N_values = 12
-        assert len(st_params)==N_values
-        field_list = ['run_id','object','date'] + self.fields
-        qest_marks = ['?' for i in range(N_values + 4)]
-        value_list = [self.run_id, obj_id, date, snr] + st_params
-        self.curs.execute("INSERT INTO RESULTS (" + ','.join(field_list) + ") VALUES (" + ','.join(qest_marks) + ");", value_list)
-        res_id = self.curs.lastrowid
+        with self.lock:
+            date = str(datetime.datetime.now())
+            N_values = 12
+            assert len(st_params)==N_values
+            field_list = ['run_id','object','date'] + self.fields
+            qest_marks = ['?' for i in range(N_values + 4)]
+            value_list = [self.run_id, obj_id, date, snr] + st_params
+            self.curs.execute("INSERT INTO RESULTS (" + ','.join(field_list) + ") VALUES (" + ','.join(qest_marks) + ");", value_list)
+            res_id = self.curs.lastrowid
 
-        for i,v in enumerate(cheb_coef):
-            self.curs.execute("INSERT INTO RESPONSE (res_id, coeff_n, value) VALUES (?,?,?);", (res_id, i, v))
+            for i,v in enumerate(cheb_coef):
+                self.curs.execute("INSERT INTO RESPONSE (res_id, coeff_n, value) VALUES (?,?,?);", (res_id, i, v))
 
-        self.conn.commit()
+            self.conn.commit()
 
     def close(self):
         self.curs.close()
