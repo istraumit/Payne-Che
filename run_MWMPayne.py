@@ -14,6 +14,7 @@ from SpectrumLoader import SpectrumLoader
 from LSF import *
 from DER_SNR import DER_SNR
 import traceback
+import datetime
 
 
 lock = Lock()
@@ -125,9 +126,11 @@ if __name__=='__main__':
             res = fit_BOSS(sd, NN, opt, logger)
         except:
             exc_text = traceback.format_exc()
+            date = str(datetime.datetime.now())
             with open('ERROR_LOG', 'a') as errlog:
-                errlog.write(exc_text)
-                errlog.write('\n')
+                errlog.write('-'*50 + '\n')
+                errlog.write(date+'\n')
+                errlog.write(exc_text+'\n')
             print(exc_text)
 
     regex = '.'
