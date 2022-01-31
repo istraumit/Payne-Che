@@ -15,6 +15,9 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table, Column
 
+def flatten(a):
+    return np.flip(a.flatten())
+
 # Object for representing 1D spectra
 class Spec1D:
     # Initialize the object
@@ -75,21 +78,21 @@ def rdspec(filename=None):
         return None
     
     # APOGEE apVisit, visit-level spectrum
-    if base.find("apVisit") > -1:
-        flux = fits.getdata(filename,1)
+    if base.find("apVisit") > -1 or base.find("asVisit") > -1:
+        flux = flatten(fits.getdata(filename,1))
         spec = Spec1D(flux)
         spec.filename = filename
         spec.sptype = "apVisit"
         spec.waveregime = "NIR"
         spec.instrument = "APOGEE"        
         spec.head = fits.getheader(filename,0)
-        spec.err = fits.getdata(filename,2)
-        spec.mask = fits.getdata(filename,3)
-        spec.wave = fits.getdata(filename,4)
-        spec.sky = fits.getdata(filename,5)
-        spec.skyerr = fits.getdata(filename,6)
-        spec.telluric = fits.getdata(filename,7)
-        spec.telerr = fits.getdata(filename,8)
+        spec.err = flatten(fits.getdata(filename,2))
+        spec.mask = flatten(fits.getdata(filename,3))
+        spec.wave = flatten(fits.getdata(filename,4))
+        spec.sky = flatten(fits.getdata(filename,5))
+        spec.skyerr = flatten(fits.getdata(filename,6))
+        spec.telluric = flatten(fits.getdata(filename,7))
+        spec.telerr = flatten(fits.getdata(filename,8))
         spec.wcoef = fits.getdata(filename,9)
         spec.lsf = fits.getdata(filename,10)
         spec.meta = fits.getdata(filename,11)   # catalog of RV and other meta-data
@@ -98,7 +101,7 @@ def rdspec(filename=None):
         return spec
 
     # APOGEE apStar, combined spectrum
-    if base.find("apStar") > -1:
+    if base.find("apStar") > -1 or base.find("asStar") > -1:
         # HISTORY APSTAR:  HDU0 = Header only                                             
         # HISTORY APSTAR:  All image extensions have:                                     
         # HISTORY APSTAR:    row 1: combined spectrum with individual pixel weighting     
