@@ -43,8 +43,9 @@ class FitLoggerDB:
         fig.set_size_inches(self.figure_width, self.figure_height)
         plt.tight_layout()
 
+        postfix = '_' + str(self.run_id) + '_' + str(self.lastrowid)
         path = os.path.join(self.log_dir, name)
-        fig.savefig(path + '.pdf', dpi=self.dpi)
+        fig.savefig(path + postfix + '.pdf', dpi=self.dpi)
         fig.clf()
 
     def _DB_path(self):
@@ -111,6 +112,7 @@ FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASC
             value_list.append(full_path)
             self.curs.execute("INSERT INTO RESULTS (" + ','.join(field_list) + ") VALUES (" + ','.join(qest_marks) + ");", value_list)
             res_id = self.curs.lastrowid
+            self.lastrowid = res_id
 
             for i,v in enumerate(cheb_coef):
                 self.curs.execute("INSERT INTO RESPONSE (res_id, coeff_n, value) VALUES (?,?,?);", (res_id, i, v))

@@ -90,8 +90,8 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     fit_res.wave = wave
     fit_res.model *= f_mean
 
-    logger.save_plot(wave, flux*f_mean, fit_res.model, name)
     logger.add_record(name, SNR, db_values, db_cheb, spectrum.full_path)
+    logger.save_plot(wave, flux*f_mean, fit_res.model, name)
     print(txt)
 
     return fit_res
