@@ -139,7 +139,9 @@ class SpectrumWrapper():
         self._path = path
 
     def load(self):
-        return self._load(self._path)
+        sd = self._load(self._path)
+        sd.full_path = self._path
+        return sd
 
     def __repr__(self):
         return self._path

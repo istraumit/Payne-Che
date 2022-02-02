@@ -76,6 +76,7 @@ res_id INTEGER PRIMARY KEY NOT NULL,
 run_id INTEGER NOT NULL,
 date TEXT NOT NULL,
 object TEXT,""" + ','.join([f+' REAL' for f in fields])+""",
+path TEXT NOT NULL,
 FOREIGN KEY (run_id) REFERENCES RUNS(run_id) ON DELETE CASCADE ON UPDATE CASCADE
 );""")
             curs.execute("""
@@ -99,14 +100,15 @@ FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASC
         self.run_id = self.curs.lastrowid
         return self.run_id
 
-    def add_record(self, obj_id, snr, st_params, cheb_coef):
+    def add_record(self, obj_id, snr, st_params, cheb_coef, full_path):
         with self.lock:
             date = str(datetime.datetime.now())
             N_values = 12
             assert len(st_params)==N_values
-            field_list = ['run_id','object','date'] + self.fields
-            qest_marks = ['?' for i in range(N_values + 4)]
+            field_list = ['run_id','object','date'] + self.fields + ['path']
+            qest_marks = ['?' for i in range(N_values + 5)]
             value_list = [self.run_id, obj_id, date, snr] + st_params
+            value_list.append(full_path)
             self.curs.execute("INSERT INTO RESULTS (" + ','.join(field_list) + ") VALUES (" + ','.join(qest_marks) + ");", value_list)
             res_id = self.curs.lastrowid
 
