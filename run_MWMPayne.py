@@ -19,6 +19,32 @@ import datetime
 
 lock = Lock()
 
+def refraction_index_V2A(lambda_vacuum):
+    """
+    Returns refraction index of air for vacuum-air conversion
+    Donald Morton (2000, ApJ. Suppl., 130, 403)
+    see http://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
+    lambda_vacuum: wavelength in angstrom
+    """
+    s = 10.e4/lambda_vacuum
+    n = 1 + 0.0000834254 + 0.02406147 / (130 - s**2) + 0.00015998 / (38.9 - s**2)
+    return n
+
+def vacuum_to_air(wave_AA):
+    """
+    Important: wavelength must be in Angstroems
+    """
+    dn = 0.01
+    lim_low, lim_high = 1.0 - dn, 1.0 + dn
+    wave_new = []
+    for w in wave_AA:
+        n = refraction_index_V2A(w)
+        if n < lim_low: n = lim_low
+        if n > lim_high: n = lim_high
+        wave_new.append( w/n )
+    return np.array(wave_new)
+
+
 def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
 
     wave_start = float(opt['wave_range'][0])
@@ -37,6 +63,8 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
     f_mean = np.mean(flux)
     flux /= f_mean
     err /= f_mean
+
+    wave = vacuum_to_air(wave)
 
     grid_params = [p for p in param_names if NN.grid[p][0]!=NN.grid[p][1]]
     bounds_unscaled = np.zeros((2, len(grid_params)))
