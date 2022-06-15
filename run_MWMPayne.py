@@ -107,11 +107,11 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
             db_values.append(None)
             db_values.append(None)
 
-    db_values.append(fit_res.popt[k])
+    db_values.append(fit_res.RV)
     db_values.append(fit_res.RV_uncert)
     db_cheb = fit_res.popt[k+1:]
 
-    row.append('%.2f'%fit_res.popt[k])
+    row.append('%.2f'%fit_res.RV)
     row.append('%.2f'%fit_res.RV_uncert)
     txt = ' '.join(row)
 

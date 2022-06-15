@@ -2,6 +2,7 @@ import math
 import numpy as np
 from common import *
 from multiprocessing import Pool
+from RV import get_RV_CCF_H_lines
 
 chi2_func = None
 
@@ -197,7 +198,10 @@ class UncertFit:
                 i+=1
         res.uncert = uncert
 
-        res.RV_uncert = self._get_RV_uncert(i, popt, CHI2_C, chi2_func)
+        #res.RV_uncert = self._get_RV_uncert(i, popt, CHI2_C, chi2_func)
+        RV, RV_1sigma = get_RV_CCF_H_lines(wave, flux)
+        res.RV = RV
+        res.RV_uncert = RV_1sigma
         
         return res
         
