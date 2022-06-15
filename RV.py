@@ -85,7 +85,7 @@ def get_RV_CCF_H_lines(wave, flux):
     P /= I
 
     RV, RV_1sigma = get_moments(means, P)
-    return RV, RV_1sigma
+    return RV, RV_1sigma, (means, P)
 
 
 

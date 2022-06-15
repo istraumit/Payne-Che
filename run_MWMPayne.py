@@ -120,6 +120,8 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
 
     logger.add_record(name, SNR, db_values, db_cheb, spectrum.full_path)
     logger.save_plot(wave, flux*f_mean, fit_res.model, name)
+    logger.save_RV_P_plot(fit_res.RV_P_plot[0], fit_res.RV_P_plot[1], name)
+
     print(txt)
 
     return fit_res

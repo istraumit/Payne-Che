@@ -199,9 +199,10 @@ class UncertFit:
         res.uncert = uncert
 
         #res.RV_uncert = self._get_RV_uncert(i, popt, CHI2_C, chi2_func)
-        RV, RV_1sigma = get_RV_CCF_H_lines(wave, flux)
+        RV, RV_1sigma, RV_P_plot = get_RV_CCF_H_lines(wave, flux)
         res.RV = RV
         res.RV_uncert = RV_1sigma
+        res.RV_P_plot = RV_P_plot
         
         return res
         

@@ -48,6 +48,21 @@ class FitLoggerDB:
         fig.savefig(path + postfix + '.pdf', dpi=self.dpi)
         fig.clf()
 
+    def save_RV_P_plot(self, xx, P, name):
+        plt.plot(xx, P)
+        plt.xlabel('RV [km/s]')
+        plt.ylabel('Probability density')
+        plt.grid()
+
+        fig = plt.gcf()
+        fig.set_size_inches(8, 4)
+        plt.tight_layout()
+
+        postfix = '_' + str(self.run_id) + '_' + str(self.lastrowid)
+        path = os.path.join(self.log_dir, name)
+        fig.savefig(path + postfix + '_RV.png', dpi=self.dpi//3)
+        fig.clf()
+
     def _DB_path(self):
         return os.path.join(self.log_dir, self.DB_name)
 
