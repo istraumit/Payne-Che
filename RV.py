@@ -15,10 +15,12 @@ class RV_corrector:
         RV_lim = 1000.0
         self.shifts = np.linspace(-RV_lim, RV_lim, 101) # velocities in km/s
 
-    def apply_Doppler_shift(wave, v_km_s):
+    def apply_Doppler_shift(wave, v_km_s, reverse=False):
         c = 299792.458 # speed of light in km/s
         vc = v_km_s/c
-        return wave + np.log10(1 + vc)
+        q = 1.0
+        if reverse: q = -1.0
+        return wave + q*np.log10(1 + vc)
 
     def get_CCF(ww, flux, lines):
         flux_values = np.interp(lines, ww, flux)
@@ -28,7 +30,7 @@ class RV_corrector:
         wave = np.log10(wave)
         CCFs=[]
         for shift in self.shifts:
-            lines_shifted = RV_corrector.apply_Doppler_shift(self.lines, shift)
+            lines_shifted = RV_corrector.apply_Doppler_shift(self.lines, shift, reverse=True)
             ccf = RV_corrector.get_CCF(wave, flux, lines_shifted)
             CCFs.append(ccf)
         RV = self.shifts[np.argmin(CCFs)]
