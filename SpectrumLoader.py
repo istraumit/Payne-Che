@@ -99,6 +99,10 @@ def load_BOSS(path):
     sd = SpectrumData(wave, flux, err)
     sd.obj_id = os.path.basename(path)
     sd.wres = wres
+
+    header = fits.getheader(path, 0)
+    sd.ra_dec = (header['PLUG_RA'], header['PLUG_DEC'])
+
     return sd
 
 
@@ -141,6 +145,7 @@ class SpectrumWrapper():
     def load(self):
         sd = self._load(self._path)
         sd.full_path = self._path
+        if not hasattr(sd, 'ra_dec'): sd.ra_dec = None
         return sd
 
     def __repr__(self):
