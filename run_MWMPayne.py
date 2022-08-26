@@ -34,8 +34,6 @@ def vacuum_to_air(wave_AA):
     """
     Important: wavelength must be in Angstroems
     """
-    dn = 0.01
-    lim_low, lim_high = 1.0 - dn, 1.0 + dn
     wave_new = []
     for w in wave_AA:
         n = refraction_index_V2A(w)
