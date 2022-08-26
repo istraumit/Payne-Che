@@ -1,3 +1,4 @@
+import io
 import os, shutil
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,6 +6,16 @@ from multiprocessing import Lock
 import sqlite3
 import datetime
 
+def adapt_array(arr):
+    out = io.BytesIO()
+    np.save(out, arr)
+    out.seek(0)
+    return sqlite3.Binary(out.read())
+
+def convert_array(text):
+    out = io.BytesIO(text)
+    out.seek(0)
+    return np.load(out)
 
 def multiplot(wave, flux, model, N, xlbl, ylbl):
     di = len(wave)//N
@@ -77,7 +88,10 @@ class FitLoggerDB:
         path = self._DB_path()
         exists = os.path.isfile(path)
 
-        conn = sqlite3.connect(path)
+        sqlite3.register_adapter(np.ndarray, adapt_array)
+        sqlite3.register_converter("array", convert_array)
+
+        conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         curs = conn.cursor()
 
         if not exists:
@@ -107,6 +121,9 @@ res_id INTEGER NOT NULL,
 path TEXT NOT NULL,
 RA REAL,
 DEC REAL,
+wave array,
+flux array,
+model array,
 FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASCADE
 );""")
 
@@ -123,7 +140,7 @@ FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASC
         self.run_id = self.curs.lastrowid
         return self.run_id
 
-    def add_record(self, obj_id, snr, st_params, cheb_coef, full_path, ra_dec):
+    def add_record(self, obj_id, snr, st_params, cheb_coef):
         with self.lock:
             date = str(datetime.datetime.now())
             N_values = 12
@@ -138,18 +155,30 @@ FOREIGN KEY (res_id) REFERENCES RESULTS(res_id) ON DELETE CASCADE ON UPDATE CASC
             for i,v in enumerate(cheb_coef):
                 self.curs.execute("INSERT INTO RESPONSE (res_id, coeff_n, value) VALUES (?,?,?);", (res_id, i, v))
 
-            meta_fields = ['res_id', 'path']
-            meta_values = [res_id, full_path]
-            if ra_dec is not None:
-                meta_fields.append('RA')
-                meta_fields.append('DEC')
-                meta_values.append(ra_dec[0])
-                meta_values.append(ra_dec[1])
-            q_marks = ['?' for x in meta_fields]
-
-            self.curs.execute("INSERT INTO METADATA (" + ','.join(meta_fields) + ") VALUES (" + ','.join(q_marks) + ");", meta_values)
-
             self.conn.commit()
+
+    def add_metadata(self, full_path, ra_dec, arrays):
+        res_id = self.lastrowid
+
+        meta_fields = ['res_id', 'path']
+        meta_values = [res_id, full_path]
+        if ra_dec is not None:
+            meta_fields.append('RA')
+            meta_fields.append('DEC')
+            meta_values.append(ra_dec[0])
+            meta_values.append(ra_dec[1])
+
+        if arrays is not None:
+            assert len(arrays)==3
+            meta_fields.extend(['wave', 'flux', 'model'])
+            meta_values.extend(arrays)
+
+        q_marks = ['?' for x in meta_fields]
+
+        with self.lock:
+            self.curs.execute("INSERT INTO METADATA (" + ','.join(meta_fields) + ") VALUES (" + ','.join(q_marks) + ");", meta_values)
+            self.conn.commit()
+
 
     def close(self):
         self.curs.close()
