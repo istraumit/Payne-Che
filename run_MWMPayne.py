@@ -26,7 +26,7 @@ def refraction_index_V2A(lambda_vacuum):
     see http://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
     lambda_vacuum: wavelength in angstrom
     """
-    s = 10.e4/lambda_vacuum
+    s = 1.e4/lambda_vacuum
     n = 1 + 0.0000834254 + 0.02406147 / (130 - s**2) + 0.00015998 / (38.9 - s**2)
     return n
 
@@ -39,8 +39,6 @@ def vacuum_to_air(wave_AA):
     wave_new = []
     for w in wave_AA:
         n = refraction_index_V2A(w)
-        if n < lim_low: n = lim_low
-        if n > lim_high: n = lim_high
         wave_new.append( w/n )
     return np.array(wave_new)
 
