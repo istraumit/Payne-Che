@@ -33,7 +33,7 @@ class Rydberg:
         see http://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
         lambda_vacuum: wavelength in angstrom
         """
-        s = 10.e4/lambda_vacuum
+        s = 1.e4/lambda_vacuum
         n = 1 + 0.0000834254 + 0.02406147 / (130 - s**2) + 0.00015998 / (38.9 - s**2)
         return n
 
@@ -43,7 +43,7 @@ class Rydberg:
         see http://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
         lambda_vacuum: wavelength in angstrom
         """
-        s = 10.e4/lambda_air
+        s = 1.e4/lambda_air
         n = 1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2) + 0.0001599740894897 / (38.92568793293 - s**2)
         return n
 
