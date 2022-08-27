@@ -13,7 +13,7 @@ class Rydberg:
         """
         self.n1 = n1
         self.air = air
-        self.R = 1.0973731568508e7 # m^-1
+        self.R = 10967758.340280352 # m^-1
 
     def get_series(self, n2_min, n2_max):
         ww = []
