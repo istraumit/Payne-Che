@@ -179,6 +179,10 @@ class SpectrumLoader():
             files.sort()
             return [SpectrumWrapper(self._load_func, os.path.join(path, fn)) for fn in files]
 
+    def get_single(self, path):
+        return SpectrumWrapper(self._load_func, path)
+
+
 if __name__=='__main__':
     import matplotlib.pyplot as plt
 

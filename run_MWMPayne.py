@@ -121,7 +121,7 @@ def fit_BOSS(spectrum, NN, opt, logger, constraints={}):
 
     print(txt)
 
-    return fit_res
+    return SNR, db_values, db_cheb
 
 
 
