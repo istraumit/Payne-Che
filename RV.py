@@ -5,13 +5,14 @@ from Rydberg import Rydberg
 
 class RV_corrector:
 
-    def __init__(self):
-        Ryd = Rydberg(3, air=True)
-        paschen = Ryd.get_series(7, 16)
-        Ryd = Rydberg(2, air=True)
-        balmer = Ryd.get_series(3, 16)
-        
-        self.lines = np.log10(np.array(paschen+balmer)) # list of lines to do CCF
+    def __init__(self, min_wave, max_wave):
+        paschen = Rydberg(3, air=True).get_series(7, 16)
+        balmer = Rydberg(2, air=True).get_series(3, 16)
+        braket = Rydberg(4, air=True).get_series(11, 25)
+        full_list = paschen + balmer + braket
+        filtered = [w for w in full_list if w>min_wave and w<max_wave]
+
+        self.lines = np.log10(np.array(filtered)) # list of lines to do CCF
         RV_lim = 1000.0
         self.shifts = np.linspace(-RV_lim, RV_lim, 101) # velocities in km/s
 
@@ -20,7 +21,7 @@ class RV_corrector:
         vc = v_km_s/c
         q = 1.0
         if reverse: q = -1.0
-        return wave + q*np.log10(1 + vc)
+        return wave + np.log10(1 + q*vc)
 
     def get_CCF(ww, flux, lines):
         flux_values = np.interp(lines, ww, flux)
@@ -62,7 +63,7 @@ def get_RV_CCF_H_lines(wave, flux):
     """
     NOTE: balmer and paschen lines only
     """
-    corr = RV_corrector()
+    corr = RV_corrector(min(wave), max(wave))
     CCF = corr.get_RV(wave, flux)
     CCF = max(CCF) - CCF
     I = np.trapz(CCF, corr.shifts)
@@ -88,7 +89,6 @@ def get_RV_CCF_H_lines(wave, flux):
 
     RV, RV_1sigma = get_moments(means, P)
     return RV, RV_1sigma, (means, P)
-
 
 
 
