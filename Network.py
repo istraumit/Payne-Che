@@ -17,12 +17,12 @@ class Network:
         '''
 
         tmp = np.load(npz_path, allow_pickle=True)
-        w_array_0 = tmp["w_array_0"]
-        w_array_1 = tmp["w_array_1"]
-        w_array_2 = tmp["w_array_2"]
-        b_array_0 = tmp["b_array_0"]
-        b_array_1 = tmp["b_array_1"]
-        b_array_2 = tmp["b_array_2"]
+        w_array_0 = tmp["w_array_0"].astype(np.float64)
+        w_array_1 = tmp["w_array_1"].astype(np.float64)
+        w_array_2 = tmp["w_array_2"].astype(np.float64)
+        b_array_0 = tmp["b_array_0"].astype(np.float64)
+        b_array_1 = tmp["b_array_1"].astype(np.float64)
+        b_array_2 = tmp["b_array_2"].astype(np.float64)
         self.x_min = tmp["x_min"]
         self.x_max = tmp["x_max"]
         self.NN_coeffs = (w_array_0, w_array_1, w_array_2, b_array_0, b_array_1, b_array_2)
@@ -74,8 +74,22 @@ class Network:
 
         # assuming your NN has two hidden layers.
         w_array_0, w_array_1, w_array_2, b_array_0, b_array_1, b_array_2 = self.NN_coeffs
-        inside = np.einsum('ij,j->i', w_array_0, scaled_labels) + b_array_0
-        outside = np.einsum('ij,j->i', w_array_1, leaky_relu(inside)) + b_array_1
-        spectrum = np.einsum('ij,j->i', w_array_2, leaky_relu(outside)) + b_array_2
+
+        #inside = np.einsum('ij,j->i', w_array_0, scaled_labels) + b_array_0
+        #outside = np.einsum('ij,j->i', w_array_1, leaky_relu(inside)) + b_array_1
+        #spectrum = np.einsum('ij,j->i', w_array_2, leaky_relu(outside)) + b_array_2
+
+        inside = leaky_relu(np.dot(w_array_0, scaled_labels) + b_array_0)
+        outside = leaky_relu(np.dot(w_array_1, inside) + b_array_1)
+        spectrum = np.dot(w_array_2, outside) + b_array_2
+
         return spectrum
+
+
+
+
+
+
+
+
 
